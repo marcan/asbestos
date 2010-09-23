@@ -13,6 +13,8 @@ OBJS = start.o main.o debug.o hvcall.o string.o printf.o
 
 all: stage2.bin
 
+hvcall.o : lv1call.h
+
 %.bin: %.elf
 	$(PREFIX)objcopy -O binary $< $@
 
