@@ -11,6 +11,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "lv1call.h"
 #include "gelic.h"
 #include "string.h"
+#include "printf.h"
 
 volatile struct gelic_descr *dbg_descr = (void*)0x40000;
 void panic(void);
@@ -60,6 +61,8 @@ struct debug_packet {
 	struct udphdr udp;
 	char data[];
 } __attribute__((packed));
+
+#define MAX_MESSAGE_SIZE 1000
 
 struct debug_packet *dbg_pkt = (void*)0x40100;
 
@@ -113,7 +116,11 @@ void debug_init(void)
 
 int printf(const char *fmt, ...)
 {
-	size_t msgsize = strlcpy(dbg_pkt->data, fmt, 236);
+	va_list ap;
+
+	va_start(ap, fmt);
+	size_t msgsize = vsnprintf(dbg_pkt->data, MAX_MESSAGE_SIZE, fmt, ap);
+	va_end(ap);
 
 	dbg_descr->buf_size = sizeof(*dbg_pkt) + msgsize;
 	dbg_pkt->ip.total_length = msgsize + sizeof(struct udphdr) + sizeof(struct iphdr);
