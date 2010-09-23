@@ -31,6 +31,7 @@ int map_dma_mem(int bus_id, int dev_id, void *start, size_t len, u64 *r_bus_addr
 	}
 
 	*r_bus_addr = bus_addr + real_addr - map_start;
+	return 0;
 }
 
 int unmap_dma_mem(int bus_id, int dev_id, u64 bus_addr, size_t len)

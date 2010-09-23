@@ -76,6 +76,8 @@ void debug_init(void)
 	u64 v2;
 
 	result = map_dma_mem(bus_id, dev_id, &dbg, sizeof(dbg), &bus_addr);
+	if (result)
+		lv1_panic(0);
 
 	memset(&dbg, 0, sizeof(dbg));
 
