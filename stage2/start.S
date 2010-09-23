@@ -83,7 +83,20 @@ reloced_start:
 # set up the stack
 	lis r1, _stack_bot@h
 	ori r1, r1, _stack_bot@l
-	
+
+# clear BSS
+	lis r3, __bss_start@h
+	ori r3, r3, __bss_start@l
+	lis r4, __bss_end@h
+	ori r4, r4, __bss_end@l
+	li r5, 0
+_bss_loop:
+	std r5, 0(r3)
+	addi r3, r3, 8
+	cmpld r3, r4
+	blt _bss_loop
+
+# jump to main (panic if it returns)
 	bl .main
 	b panic
 
