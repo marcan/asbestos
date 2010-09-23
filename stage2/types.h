@@ -21,7 +21,7 @@ typedef signed short s16;
 typedef signed int s32;
 typedef signed long s64;
 
-typedef unsigned int size_t;
-typedef signed int ssize_t;
+typedef unsigned long size_t;
+typedef signed long ssize_t;
 
 #endif
