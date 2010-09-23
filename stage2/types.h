@@ -9,7 +9,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #ifndef TYPES_H
 #define TYPES_H
 
-#define NULL ((void *)0)
+#include <stddef.h>
 
 typedef unsigned char u8;
 typedef unsigned short u16;
