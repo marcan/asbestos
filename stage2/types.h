@@ -24,4 +24,6 @@ typedef signed long s64;
 typedef unsigned long size_t;
 typedef signed long ssize_t;
 
+#define ALIGNED(x) __attribute__((aligned(x)))
+
 #endif
