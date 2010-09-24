@@ -138,3 +138,9 @@ int printf(const char *fmt, ...)
 	while ((dbg.descr.dmac_cmd_status & GELIC_DESCR_DMA_STAT_MASK) == GELIC_DESCR_DMA_CARDOWNED);
 	return 0;
 }
+
+void abort(void)
+{
+	printf("abort() called! Panicking.\n");
+	lv1_panic(0);
+}

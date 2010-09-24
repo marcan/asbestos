@@ -9,7 +9,7 @@ include ../common/ppu.mak
 LDFLAGS += -Wl,-T,stage2.ld
 CFLAGS += -O2 -Wall
 
-OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o
+OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o malloc.o
 
 all: stage2.bin
 
