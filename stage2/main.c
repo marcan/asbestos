@@ -93,7 +93,7 @@ struct tftp_client *tftp;
 
 void tftp_cb(void *arg, struct tftp_client *clt, enum tftp_status status, size_t recvd)
 {
-	printf("TFTP transfer complete. status %d, received %ld bytes\n", status, recvd);
+	printf("Transfer complete, status %d. Image size: %ld bytes\n", status, recvd);
 
 	if (status == TFTP_STATUS_OK) {
 		printf("Relocating kernel...\n");
@@ -101,10 +101,11 @@ void tftp_cb(void *arg, struct tftp_client *clt, enum tftp_status status, size_t
 		printf("Taking the plunge...\n");
 		klaunch();
 		fatal("klaunch returned\n");
+	} else {
+		printf("Transfer did not complete successfully\n");
+		printf("Rebooting...\n");
+		lv1_panic(1);
 	}
-
-	printf("Rebooting...\n");
-	lv1_panic(1);
 }
 
 void start_net_ops(void)

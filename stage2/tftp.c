@@ -79,7 +79,7 @@ static void tftp_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip
 	}
 
 	if (clt->state == STATE_REQUESTED) {
-		printf("TFTP: received packet, remote port is %d\n", port);
+		printf("TFTP: received first packet, remote port is %d\n", port);
 		clt->rport = port;
 		udp_connect(clt->pcb, ipaddr, port);
 		clt->state = STATE_RECEIVING;
@@ -109,7 +109,7 @@ static void tftp_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip
 		pbuf_free(p);
 		return;
 	}
-	printf("TFTP: received data packet op %d block %d len %d\n", thdr.opcode, thdr.block, p->tot_len);
+	//printf("TFTP: received data packet op %d block %d len %d\n", thdr.opcode, thdr.block, p->tot_len);
 
 	if (clt->blocknum != thdr.block) {
 
@@ -153,13 +153,17 @@ static void tftp_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip
 	}
 	clt->blocknum++;
 
+	if (clt->blocknum%1024 == 1) {
+		printf("TFTP: downloaded %ldkB so far...\n", clt->rxbytes/1024);
+	}
+
 	if (len != (p->tot_len-4)) {
 		printf("TFTP: buffer overflow\n");
 		clt->cb(clt->cbarg, clt, TFTP_STATUS_OVERFLOW, clt->rxbytes);
 		clt->state = STATE_ERROR;
 		udp_disconnect(clt->pcb);
 	} else if (len < 512) {
-		printf("TFTP: transfer complete\n");
+		printf("TFTP: download complete (%ld bytes)\n", clt->rxbytes);
 		clt->cb(clt->cbarg, clt, TFTP_STATUS_OK, clt->rxbytes);
 		clt->state = STATE_IDLE;
 		udp_disconnect(clt->pcb);
@@ -192,7 +196,6 @@ struct tftp_client *tftp_new(void)
 
 err_t tftp_connect(struct tftp_client *clt, struct ip_addr *ipaddr, u16_t port)
 {
-	printf("tftp_connect()\n");
 	ip_addr_set(&clt->remote, ipaddr);
 	clt->dport = port;
 
@@ -203,7 +206,7 @@ err_t tftp_get(struct tftp_client *clt, char *name, void *buffer, size_t max_siz
 {
 	err_t err;
 	int len;
-	printf("tftp_get(%s)\n", name);
+	printf("TFTP: starting download for file '%s'\n", name);
 
 	len = 4 + strlen(name) + strlen("octet");
 
@@ -220,11 +223,12 @@ err_t tftp_get(struct tftp_client *clt, char *name, void *buffer, size_t max_siz
 	len = strlcpy((char*)p, name, 100);
 	p += len+1;
 	len = strlcpy((char*)p, "octet", 100);
-	printf("Sending TFTP RRQ (%d bytes)\n", pb->len);
 
 	err = udp_sendto(clt->pcb, pb, &clt->remote, clt->dport);
 	if (err)
 		return err;
+
+	printf("TFTP: sent TFTP RRQ (%d bytes)\n", pb->len);
 
 	clt->rport = 0;
 	clt->cb = cb;
