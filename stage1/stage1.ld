@@ -11,7 +11,7 @@ OUTPUT_ARCH(powerpc:common64)
 
 __base = 0x80000000007ff000;
 
-__stage2 = 0x8000000000780000;
+__stage2 = 0x8000000000700000;
 
 ENTRY(_start)
 
