@@ -12,6 +12,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 void debug_init(void);
 int printf(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 
+void fatal(const char *msg);
 void abort(void);
 
 #endif

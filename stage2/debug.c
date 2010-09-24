@@ -145,3 +145,10 @@ void abort(void)
 	printf("abort() called! Panicking.\n");
 	lv1_panic(0);
 }
+
+void fatal(const char *msg)
+{
+	printf("FATAL: %s\n", msg);
+	printf("Panicking.\n");
+	lv1_panic(0);
+}
