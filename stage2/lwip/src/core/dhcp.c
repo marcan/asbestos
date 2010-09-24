@@ -518,15 +518,14 @@ dhcp_handle_ack(struct netif *netif)
  * Patch #1308
  * TODO: we must check if the file field is not overloaded by DHCP options!
  */
-#if 0
   /* boot server address */
   ip_addr_set(&dhcp->offered_si_addr, &dhcp->msg_in->siaddr);
   /* boot file name */
   if (dhcp->msg_in->file[0]) {
-    dhcp->boot_file_name = mem_malloc(strlen(dhcp->msg_in->file) + 1);
-    strcpy(dhcp->boot_file_name, dhcp->msg_in->file);
+    int len = strlen((char*)dhcp->msg_in->file) + 1;
+    dhcp->boot_file_name = mem_malloc(len);
+    strlcpy((char*)dhcp->boot_file_name, (char*)dhcp->msg_in->file, len);
   }
-#endif
 
   /* subnet mask */
   option_ptr = dhcp_get_option_ptr(dhcp, DHCP_OPTION_SUBNET_MASK);

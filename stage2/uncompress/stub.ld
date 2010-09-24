@@ -10,8 +10,9 @@ OUTPUT_FORMAT("elf64-powerpc")
 OUTPUT_ARCH(powerpc:common64)
 
 /* stub runs in realmode */
-__base = 0x100000;
-__stage2_base = 0x10000;
+__base = 0x400000;
+/* needs to match __base in stage2.ld */
+__stage2_base = 0xc00000;
 
 ENTRY(_start)
 

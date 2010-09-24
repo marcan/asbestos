@@ -60,6 +60,9 @@ realmode:
 	lwz r7, -4(r7)
 	add r6, r6, r7
 
+	cmpld r4, r5
+	beq _no_reloc
+
 _reloc_loop:
 	ld r8, 0(r4)
 	std r8, 0(r5)
@@ -76,6 +79,7 @@ _reloc_loop:
 	addi r5, r5, 0x20
 	cmpld r5, r6
 	blt _reloc_loop
+_no_reloc:
 
 # continue running at the relocated location
 	lis r4, reloced_start@h

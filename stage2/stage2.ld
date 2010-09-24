@@ -10,7 +10,10 @@ OUTPUT_FORMAT("elf64-powerpc")
 OUTPUT_ARCH(powerpc:common64)
 
 /* stage2 runs in realmode */
-__base = 0x10000;
+__base = 0xc00000;
+
+/* load address for kernel */
+__zimage_load_base = 0x10000;
 
 ENTRY(_start)
 

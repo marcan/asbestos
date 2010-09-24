@@ -60,13 +60,8 @@ struct dhcp
 #if LWIP_DHCP_AUTOIP_COOP
   u8_t autoip_coop_state;
 #endif
-/** Patch #1308
- *  TODO: See dhcp.c "TODO"s
- */
-#if 0
   struct ip_addr offered_si_addr;
   u8_t *boot_file_name;
-#endif
 };
 
 /* MUST be compiled with "pack structs" or equivalent! */

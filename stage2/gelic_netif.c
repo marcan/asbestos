@@ -209,7 +209,7 @@ low_level_output(struct netif *netif, struct pbuf *p)
 	struct gelicif *gelicif = netif->state;
 	s64 result;
 
-	printf("gelicif: transmitting packet\n");
+	//printf("gelicif: transmitting packet\n");
 	
 	u8 *pkt = gelicif->txd.pkt;
 	u64 total_len = 0;
@@ -273,7 +273,7 @@ low_level_input(struct netif *netif)
 	if ((status & GELIC_DESCR_DMA_STAT_MASK) == GELIC_DESCR_DMA_CARDOWNED)
 		return NULL;
 
-	printf("gelicif: packet received (idx %d, status 0x%08x)\n", gelicif->next_rx, status);
+	//printf("gelicif: packet received (idx %d, status 0x%08x)\n", gelicif->next_rx, status);
 	
 	gelicif->next_rx++;
 	gelicif->next_rx %= NUM_RX_BUFS;
