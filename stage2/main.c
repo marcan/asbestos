@@ -84,7 +84,7 @@ void net_loop(void) {
 	printf("Mainloop done\n");
 }
 
-#define P_IP(w) (u8)((w)>>24), (u8)((w)>>8), (u8)((w)>>16), (u8)(w)
+#define P_IP(w) (u8)((w)>>24), (u8)((w)>>16), (u8)((w)>>8), (u8)(w)
 
 extern u8 __zimage_load_base[];
 u8 *recv_buf;
