@@ -1,4 +1,4 @@
-/*  stage1.ld - LZO decompression stub linker script
+/*  stub.ld - LZO decompression stub linker script
 
 Copyright (C) 2010  Hector Martin "marcan" <hector@marcansoft.com
 

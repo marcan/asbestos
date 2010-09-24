@@ -1,4 +1,4 @@
-/*  stage1.ld - AsbestOS stage2 linker script
+/*  stage2.ld - AsbestOS stage2 linker script
 
 Copyright (C) 2010  Hector Martin "marcan" <hector@marcansoft.com
 
