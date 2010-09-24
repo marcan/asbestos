@@ -495,6 +495,7 @@ MAX_RELEASE_CHECK_RATE   default: 4095 unless not HAVE_MMAP
 #define LACKS_SYS_TYPES_H 1
 #define LACKS_SYS_PARAM_H 1
 #define MALLOC_FAILURE_ACTION
+#define NO_MALLINFO 1
 
 #define time(x) 0
 
