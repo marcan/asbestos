@@ -17,11 +17,11 @@ OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o malloc.o \
 all: stage2.bin
 
 %.bin: %.elf
-	@echo "  OBJCOPY   $<"
+	@echo "  OBJCOPY   $@"
 	@$(PREFIX)objcopy -O binary $< $@
 
 stage2.elf: $(OBJS) stage2.ld
-	@echo "  LINK      $<"
+	@echo "  LINK      $@"
 	@$(PREFIX)gcc $(LDFLAGS) -o $@ $(OBJS)
 
 %.o: %.S
@@ -36,7 +36,7 @@ stage2.elf: $(OBJS) stage2.ld
 
 clean:
 	rm -rf $(DEPDIR)
-	rm -f *.o *.elf *.bin
+	rm -f $(OBJS) *.elf *.bin
 
 -include $(DEPDIR)/*
 
