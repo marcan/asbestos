@@ -89,4 +89,22 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 
 #define lv1call sc 1; extsw r3, r3
 
+
+#define XGLUE(a,b) a##b
+#define GLUE(a,b) XGLUE(a,b)
+
+#define _GLOBAL(name) \
+	.section ".text"; \
+	.align 2 ; \
+	.globl name; \
+	.globl GLUE(.,name); \
+	.section ".opd","aw"; \
+name: \
+	.quad GLUE(.,name); \
+	.quad .TOC.@tocbase; \
+	.quad 0; \
+	.previous; \
+	.type GLUE(.,name),@function; \
+GLUE(.,name):
+
 #endif

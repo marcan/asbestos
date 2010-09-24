@@ -22,23 +22,6 @@
 #if !defined(_ASM_POWERPC_LV1CALL_H)
 #define _ASM_POWERPC_LV1CALL_H
 
-#define XGLUE(a,b) a##b
-#define GLUE(a,b) XGLUE(a,b)
-
-#define _GLOBAL(name) \
-	.section ".text"; \
-	.align 2 ; \
-	.globl name; \
-	.globl GLUE(.,name); \
-	.section ".opd","aw"; \
-name: \
-	.quad GLUE(.,name); \
-	.quad .TOC.@tocbase; \
-	.quad 0; \
-	.previous; \
-	.type GLUE(.,name),@function; \
-GLUE(.,name):
-
 #if !defined(__ASSEMBLY__)
 
 /* lv1 call declaration macros */

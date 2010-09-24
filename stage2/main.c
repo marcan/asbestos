@@ -11,6 +11,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "debug.h"
 #include "malloc.h"
 #include "time.h"
+#include "klaunch.h"
 
 #include "lwip/init.h"
 #include "lwip/dhcp.h"
@@ -93,6 +94,12 @@ struct tftp_client *tftp;
 void tftp_cb(void *arg, struct tftp_client *clt, enum tftp_status status, size_t recvd)
 {
 	printf("TFTP transfer complete. status %d, received %ld bytes\n", status, recvd);
+
+	if (status == TFTP_STATUS_OK) {
+		printf("Taking the plunge...\n");
+		klaunch(recvd);
+		fatal("klaunch returned\n");
+	}
 
 	printf("Rebooting...\n");
 	lv1_panic(1);
