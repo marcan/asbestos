@@ -16,67 +16,6 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 	.global _start
 
 _start:
-	mflr r0
-	bl 1f
-1:
-	mflr r30
-
-	# calculate our realmode base
-	addi r30, r30, (_start - 1b)
-	clrldi r30, r30, 1
-
-	# calculate realmode address of realmode
-	addi r3, r30, (realmode - _start)
-
-	# switch to realmode
-	isync
-	mtsrr0 r3
-	# set MSR[DR:IR] = 00 and jump to srr0
-	mfmsr r3
-	li r4, 0x30
-	andc r3, r3, r4
-	mtsrr1 r3
-	rfid
-
-realmode:
-
-	mfmsr r3
-	# disable interrupts
-	rldicl r3, r3, 48, 1
-	rotldi r3, r3, 16
-	mtmsrd r3, 0
-
-	mr r4, r30
-# relocate to our real address
-	lis r5, __self_start@h
-	ori r5, r5, __self_start@l
-	lis r6, __self_end@h
-	ori r6, r6, __self_end@l
-
-_reloc_loop:
-	ld r8, 0(r4)
-	std r8, 0(r5)
-	ld r8, 8(r4)
-	std r8, 8(r5)
-	ld r8, 16(r4)
-	std r8, 16(r5)
-	ld r8, 24(r4)
-	std r8, 24(r5)
-	dcbst 0, r5
-	sync
-	icbi 0, r5
-	addi r4, r4, 0x20
-	addi r5, r5, 0x20
-	cmpld r5, r6
-	blt _reloc_loop
-
-# continue running at the relocated location
-	lis r4, reloced_start@h
-	ori r4, r4, reloced_start@l
-	mtctr r4
-	bctr
-
-reloced_start:
 # set up the TOC register
 	lis r2, (__toc_start+0x8000)@h
 	ori r2, r2, (__toc_start+0x8000)@l

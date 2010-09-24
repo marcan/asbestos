@@ -6,8 +6,10 @@
 # see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 
 include ../common/ppu.mak
+STUB_LDFLAGS := $(LDFLAGS) -Wl,-T,uncompress/stub.ld
 LDFLAGS += -Wl,-T,stage2.ld
-CFLAGS += -O2 -Wall -I. \
+STUB_CFLAGS := $(CFLAGS) -Oa -Wall -ffunction-sections -I. -Iuncompress/
+CFLAGS += -Os -Wall -I. -ffunction-sections \
 	-Ilwip/src/include -Ilwip/src/include/ipv4 -Ilwip/arch/include
 
 DEPDIR = .deps
@@ -25,13 +27,28 @@ LWIP_OBJS = \
 OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o malloc.o \
 	time.o gelic_netif.o $(LWIP_OBJS)
 
+STUB_OBJS = uncompress/stub_start.o uncompress/stub_main.o uncompress/minilzo.o
+
 all: stage2.bin
+
+.PRECIOUS: stage2_raw.bin
+
+stage2.bin : uncompress/stub.bin stage2_raw.lzo
+	cat uncompress/stub.bin stage2_raw.lzo > $@
+
+%.lzo: %.bin uncompress/lzocomp
+	@echo "  LZOCOMP   $@"
+	uncompress/lzocomp $< $@
 
 %.bin: %.elf
 	@echo "  OBJCOPY   $@"
 	@$(PREFIX)objcopy -O binary $< $@
 
-stage2.elf: $(OBJS) stage2.ld
+uncompress/stub.elf: $(STUB_OBJS) uncompress/stub.ld
+	@echo "  LINK      $@"
+	@$(PREFIX)gcc $(STUB_LDFLAGS) -o $@ $(STUB_OBJS)
+
+stage2_raw.elf: $(OBJS) stage2.ld
 	@echo "  LINK      $@"
 	@$(PREFIX)gcc $(LDFLAGS) -o $@ $(OBJS)
 
@@ -45,9 +62,14 @@ stage2.elf: $(OBJS) stage2.ld
 	@mkdir -p $(DEPDIR)
 	@$(PREFIX)gcc $(CFLAGS) -Wp,-MMD,$(DEPDIR)/$(*F).d,-MQ,"$@",-MP -c -o $@ $<
 
+uncompress/lzocomp : uncompress/lzocomp.c
+	@echo "  HOSTCC    $<"
+	gcc -o $@ $< -llzo2
+
 clean:
 	rm -rf $(DEPDIR)
-	rm -f $(OBJS) *.elf *.bin
+	rm -f $(OBJS)*.elf *.bin *.lzo
+	rm -f $(STUB_OBJS) stub/lzocomp
 
 -include $(DEPDIR)/*
 
