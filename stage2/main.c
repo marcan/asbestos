@@ -41,7 +41,9 @@ void net_init(void) {
 
 void net_loop(void) {
 	u64 now = gettb();
+#if LWIP_TCP
 	u64 last_tcp_time = now;
+#endif
 	u64 last_arp_time = now;
 	u64 last_dhcp_coarse_time = now;
 	u64 last_dhcp_fine_time = now;
@@ -57,10 +59,12 @@ void net_loop(void) {
 			etharp_tmr();
 			last_arp_time = now;
 		}
+#if LWIP_TCP
 		if ((now - last_tcp_time) >= (TCP_TMR_INTERVAL*TICKS_PER_MS)) {
 			tcp_tmr();
 			last_tcp_time = now;
 		}
+#endif
 		if ((now - last_dhcp_coarse_time) >= (DHCP_COARSE_TIMER_SECS*TICKS_PER_SEC)) {
 			dhcp_coarse_tmr();
 			last_dhcp_coarse_time = now;

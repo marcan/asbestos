@@ -11,6 +11,7 @@
 
 #define LWIP_DHCP 1
 #define LWIP_ARP 1
+#define LWIP_TCP 0
 #define LWIP_NETIF_HOSTNAME 1
 
 #define ETH_PAD_SIZE 2
