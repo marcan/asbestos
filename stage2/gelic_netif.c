@@ -61,7 +61,7 @@ struct gelicif {
 	
 };
 
-void chain_rx(struct gelicif *gelicif, int i)
+static void chain_rx(struct gelicif *gelicif, int i)
 {
 	//printf("gelicif: chain_rx(%d)\n", i);
 	gelicif->rxd[i].descr->next_descr_addr = 0;
