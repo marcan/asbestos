@@ -11,7 +11,8 @@ CFLAGS += -O2 -Wall -Ilwip/src/include -Ilwip/arch/include
 
 DEPDIR = .deps
 
-OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o malloc.o
+OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o malloc.o \
+	time.o
 
 all: stage2.bin
 
