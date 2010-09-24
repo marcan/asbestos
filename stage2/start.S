@@ -36,7 +36,7 @@ _bss_loop:
 	blt _bss_loop
 
 # jump to main (panic if it returns)
-	bl .main
+	bl main
 	b panic
 
 # shutdown

@@ -6,9 +6,10 @@
 # see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 
 include ../common/ppu.mak
-STUB_LDFLAGS := $(LDFLAGS) -Wl,-T,uncompress/stub.ld
-LDFLAGS += -Wl,-T,stage2.ld
-STUB_CFLAGS := $(CFLAGS) -Oa -Wall -ffunction-sections -I. -Iuncompress/
+
+STUB_LDFLAGS := $(LDFLAGS) -Wl,--gc-sections -Wl,-T,uncompress/stub.ld
+LDFLAGS += -Wl,--gc-sections -Wl,-T,stage2.ld
+STUB_CFLAGS := $(CFLAGS) -Os -Wall -ffunction-sections -I. -Iuncompress/
 CFLAGS += -Os -Wall -I. -ffunction-sections \
 	-Ilwip/src/include -Ilwip/src/include/ipv4 -Ilwip/arch/include
 

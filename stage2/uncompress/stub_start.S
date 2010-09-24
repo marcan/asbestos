@@ -107,7 +107,7 @@ _bss_loop:
 _nobss:
 
 # jump to main (panic if it returns)
-	bl .main
+	bl main
 	b panic
 
 # shutdown
