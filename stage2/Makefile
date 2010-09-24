@@ -7,12 +7,23 @@
 
 include ../common/ppu.mak
 LDFLAGS += -Wl,-T,stage2.ld
-CFLAGS += -O2 -Wall -Ilwip/src/include -Ilwip/arch/include
+CFLAGS += -O2 -Wall -I. \
+	-Ilwip/src/include -Ilwip/src/include/ipv4 -Ilwip/arch/include
 
 DEPDIR = .deps
 
+LWIP_OBJS = \
+	$(addprefix lwip/src/core/,\
+		dhcp.o init.o mem.o memp.o netif.o pbuf.o raw.o stats.o sys.o \
+		tcp.o tcp_in.o tcp_out.o udp.o) \
+	$(addprefix lwip/src/core/ipv4/,\
+		autoip.o icmp.o ip.o ip_addr.o ip_frag.o inet_chksum.o) \
+	$(addprefix lwip/src/api/,\
+		tcpip.o err.o netifapi.o api_lib.o api_msg.o sockets.o) \
+	lwip/src/netif/etharp.o
+
 OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o malloc.o \
-	time.o
+	time.o gelic_netif.o $(LWIP_OBJS)
 
 all: stage2.bin
 
