@@ -11,6 +11,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 
 #include "types.h"
 
-void klaunch(u64 size);
+void kload(u64 size);
+void klaunch(void);
 
 #endif

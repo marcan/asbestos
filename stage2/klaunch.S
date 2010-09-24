@@ -8,7 +8,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 
 #include "../common/assembly.h"
 
-_GLOBAL(klaunch)
+_GLOBAL(kload)
 	mfmsr r5
 	# disable interrupts
 	rldicl r5, r5, 48, 1
@@ -38,4 +38,7 @@ _move_loop:
 	cmpld r5, r3
 	blt _move_loop
 
-	ba 0
+	blr
+
+_GLOBAL(klaunch)
+	ba 0x100

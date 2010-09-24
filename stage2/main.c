@@ -96,8 +96,10 @@ void tftp_cb(void *arg, struct tftp_client *clt, enum tftp_status status, size_t
 	printf("TFTP transfer complete. status %d, received %ld bytes\n", status, recvd);
 
 	if (status == TFTP_STATUS_OK) {
+		printf("Relocating kernel...\n");
+		kload(recvd);
 		printf("Taking the plunge...\n");
-		klaunch(recvd);
+		klaunch();
 		fatal("klaunch returned\n");
 	}
 
