@@ -25,6 +25,8 @@ Portions taken from Linux (drivers/net/ps3_gelic_net.h):
 #ifndef GELIC_H
 #define GELIC_H
 
+#include "types.h"
+
  /* RX descriptor data_status bits */
 enum gelic_descr_rx_status {
 	GELIC_DESCR_RXDMADU		= 0x80000000, /* destination MAC addr unknown */

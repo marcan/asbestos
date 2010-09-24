@@ -84,14 +84,15 @@ void debug_init(void)
 	dbg.descr.buf_addr = bus_addr + offsetof(struct debug_block, pkt);
 
 	u64 mac;
-	result = lv1_net_control(bus_id, dev_id, 1, 0, 0, 0, &mac, &v2);
+	result = lv1_net_control(bus_id, dev_id, GELIC_LV1_GET_MAC_ADDRESS, 0, 0, 0, &mac, &v2);
 	if (result)
 		lv1_panic(0);
 
 	mac <<= 16;
 
 	u64 vlan_id;
-	result = lv1_net_control(bus_id, dev_id, 4, 2, 0, 0, &vlan_id, &v2);
+	result = lv1_net_control(bus_id, dev_id, GELIC_LV1_GET_VLAN_ID, \
+							 GELIC_LV1_VLAN_TX_ETHERNET_0, 0, 0, &vlan_id, &v2);
 	if (result)
 		lv1_panic(0);
 
