@@ -7,25 +7,36 @@
 
 include ../common/ppu.mak
 LDFLAGS += -Wl,-T,stage2.ld
-CFLAGS += -O2 -Wall
+CFLAGS += -O2 -Wall -Ilwip/src/include -Ilwip/arch/include
+
+DEPDIR = .deps
 
 OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o malloc.o
 
 all: stage2.bin
 
-hvcall.o : lv1call.h
-
 %.bin: %.elf
-	$(PREFIX)objcopy -O binary $< $@
+	@echo "  OBJCOPY   $<"
+	@$(PREFIX)objcopy -O binary $< $@
 
 stage2.elf: $(OBJS) stage2.ld
-	$(PREFIX)gcc $(LDFLAGS) -o $@ $(OBJS)
+	@echo "  LINK      $<"
+	@$(PREFIX)gcc $(LDFLAGS) -o $@ $(OBJS)
 
 %.o: %.S
-	$(PREFIX)gcc $(CFLAGS) -c -o $@ $<
+	@echo "  ASSEMBLE  $<"
+	@mkdir -p $(DEPDIR)
+	@$(PREFIX)gcc $(CFLAGS) -Wp,-MMD,$(DEPDIR)/$(*F).d,-MQ,"$@",-MP -c -o $@ $<
 
 %.o: %.c
-	$(PREFIX)gcc $(CFLAGS) -c -o $@ $<
+	@echo "  COMPILE   $<"
+	@mkdir -p $(DEPDIR)
+	@$(PREFIX)gcc $(CFLAGS) -Wp,-MMD,$(DEPDIR)/$(*F).d,-MQ,"$@",-MP -c -o $@ $<
 
 clean:
+	rm -rf $(DEPDIR)
 	rm -f *.o *.elf *.bin
+
+-include $(DEPDIR)/*
+
+.PHONY: clean
