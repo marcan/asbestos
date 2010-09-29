@@ -109,6 +109,9 @@ void tftp_cb(void *arg, struct tftp_client *clt, enum tftp_status status, size_t
 
 		printf("Relocating kernel...\n");
 		kload(recvd);
+		printf("Letting thread1 run loose...\n");
+		_thread1_vector = 0x100;
+		_thread1_release = 1;
 		printf("Taking the plunge...\n");
 		klaunch();
 		fatal("klaunch returned\n");
