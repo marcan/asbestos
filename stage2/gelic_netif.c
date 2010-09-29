@@ -48,8 +48,8 @@ struct gelicif_buf {
  */
 struct gelicif {
 	/* Add whatever per-interface state that is needed here. */
-	u64 bus_id;
-	u64 dev_id;
+	int bus_id;
+	int dev_id;
 	u64 bus_addr;
 	void *dma_buf;
 	u64 buf_size;
@@ -93,7 +93,7 @@ static void
 low_level_init(struct netif *netif)
 {
 	struct gelicif *gelicif = netif->state;
-	s32 result;
+	s64 result;
 	u64 v2;
 	int i;
 
@@ -104,6 +104,12 @@ low_level_init(struct netif *netif)
 
 	u64 pktbuf_size = netif->mtu + 18;
 	pktbuf_size = (pktbuf_size+127)&(~127);
+
+	result = find_device_by_type(DEV_TYPE_ETH, 0, &gelicif->bus_id, &gelicif->dev_id, NULL);
+	if (result)
+		fatal("gelicif: failed to find device");
+
+	printf("gelicif: device is on bus %d, device %d\n", gelicif->bus_id, gelicif->dev_id);
 
 	gelicif->bus_id = 1;
 	gelicif->dev_id = 0;
