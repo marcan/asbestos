@@ -38,14 +38,17 @@ int map_dma_mem(int bus_id, int dev_id, void *start, size_t len, u64 *r_bus_addr
 int unmap_dma_mem(int bus_id, int dev_id, u64 bus_addr, size_t len)
 {
 	s64 result;
+	u64 real_bus_addr;
 
-	bus_addr &= ~0xfff;
+	real_bus_addr = bus_addr & ~0xfff;
+	len += bus_addr - real_bus_addr;
+	len = (len + 0xfff) & ~0xfff;
 
-	result = lv1_unmap_device_dma_region(bus_id, dev_id, bus_addr, len);
+	result = lv1_unmap_device_dma_region(bus_id, dev_id, real_bus_addr, len);
 	if (result)
 		return result;
 
-	return lv1_free_device_dma_region(bus_id, dev_id, bus_addr);
+	return lv1_free_device_dma_region(bus_id, dev_id, real_bus_addr);
 }
 
 #define _PS(s) (s "\0\0\0\0\0\0\0\0")
