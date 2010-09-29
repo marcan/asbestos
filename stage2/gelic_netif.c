@@ -200,6 +200,30 @@ low_level_init(struct netif *netif)
 	printf("gelicif: started RX DMA\n");
 }
 
+static void low_level_shutdown(struct netif *netif)
+{
+	struct gelicif *gelicif = netif->state;
+	s32 result;
+
+	printf("gelicif: low_level_shutdown()\n");
+
+	result = lv1_net_stop_rx_dma(gelicif->bus_id, gelicif->dev_id, 0);
+	if (result) {
+		printf("gelicif: WARNING: failed to stop RX DMA, will not free buffer\n");
+	} else {
+		printf("gelicif: stopped RX DMA\n");
+		result = unmap_dma_mem(gelicif->bus_id, gelicif->dev_id, gelicif->bus_addr, gelicif->buf_size);
+		if (result) {
+			printf("gelicif: WARNING: failed to unmap DMA mem, will not free buffer\n");
+		} else {
+			printf("gelicif: unmapped DMA memory\n");
+			free(gelicif->dma_buf);
+		}
+	}
+
+	printf("gelicif: low_level_shutdown() complete\n");
+}
+
 /**
  * This function should do the actual transmission of the packet. The packet is
  * contained in the pbuf that is passed to the function. This pbuf
@@ -432,7 +456,7 @@ gelicif_init(struct netif *netif)
 
 	gelicif = mem_malloc(sizeof(struct gelicif));
 	if (gelicif == NULL) {
-		LWIP_DEBUGF(NETIF_DEBUG, ("gelicif_init: out of memory\n"));
+		fatal("gelicif: out of memory");
 		return ERR_MEM;
 	}
 
@@ -453,6 +477,21 @@ gelicif_init(struct netif *netif)
 
 	/* initialize the hardware */
 	low_level_init(netif);
+
+	return ERR_OK;
+}
+
+err_t
+gelicif_shutdown(struct netif *netif)
+{
+	/* deinitialize the hardware */
+	low_level_shutdown(netif);
+
+	if (!netif->state)
+		fatal("gelicif: interface already freed");
+
+	free(netif->state);
+	netif->state = NULL;
 
 	return ERR_OK;
 }

@@ -11,6 +11,7 @@
 #include "netif/etharp.h"
 
 err_t gelicif_init(struct netif *netif);
+err_t gelicif_shutdown(struct netif *netif);
 int gelicif_input(struct netif *netif);
 
 

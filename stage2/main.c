@@ -96,6 +96,13 @@ void tftp_cb(void *arg, struct tftp_client *clt, enum tftp_status status, size_t
 	printf("Transfer complete, status %d. Image size: %ld bytes\n", status, recvd);
 
 	if (status == TFTP_STATUS_OK) {
+		printf("Releasing DHCP lease...\n");
+		dhcp_release(&eth);
+		dhcp_stop(&eth);
+		printf("Shutting down network...\n");
+		netif_remove(&eth);
+		gelicif_shutdown(&eth);
+
 		printf("Relocating kernel...\n");
 		kload(recvd);
 		printf("Taking the plunge...\n");
