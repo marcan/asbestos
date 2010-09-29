@@ -69,7 +69,7 @@ uncompress/lzocomp : uncompress/lzocomp.c
 
 clean:
 	rm -rf $(DEPDIR)
-	rm -f $(OBJS)*.elf *.bin *.lzo
+	rm -f $(OBJS) *.elf *.bin *.lzo
 	rm -f $(STUB_OBJS) stub/lzocomp
 
 -include $(DEPDIR)/*
