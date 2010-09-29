@@ -17,8 +17,8 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 
 #define DEBUG_PORT 18194
 
-static u64 bus_id = 1;
-static u64 dev_id = 0;
+static int bus_id;
+static int dev_id;
 
 static u64 bus_addr;
 
@@ -70,10 +70,16 @@ struct debug_block {
 
 static struct debug_block dbg ALIGNED(32);
 
+static int debug_initialized = 0;
+
 void debug_init(void)
 {
 	s64 result;
 	u64 v2;
+
+	result = find_device_by_type(DEV_TYPE_ETH, 0, &bus_id, &dev_id, NULL);
+	if (result)
+		lv1_panic(0);
 
 	result = map_dma_mem(bus_id, dev_id, &dbg, sizeof(dbg), &bus_addr);
 	if (result)
@@ -108,6 +114,8 @@ void debug_init(void)
 	dbg.pkt.ip.dest = 0xffffffff;
 	dbg.pkt.udp.src = DEBUG_PORT;
 	dbg.pkt.udp.dest = DEBUG_PORT;
+
+	debug_initialized = 1;
 }
 
 int printf(const char *fmt, ...)
@@ -117,6 +125,9 @@ int printf(const char *fmt, ...)
 	va_start(ap, fmt);
 	size_t msgsize = vsnprintf(dbg.message, MAX_MESSAGE_SIZE, fmt, ap);
 	va_end(ap);
+
+	if (!debug_initialized)
+		return msgsize;
 
 	dbg.descr.buf_size = sizeof(dbg.pkt) + msgsize;
 	dbg.pkt.ip.total_length = msgsize + sizeof(struct udphdr) + sizeof(struct iphdr);
@@ -137,7 +148,7 @@ int printf(const char *fmt, ...)
 	lv1_net_start_tx_dma(bus_id, dev_id, bus_addr, 0);
 
 	while ((dbg.descr.dmac_cmd_status & GELIC_DESCR_DMA_STAT_MASK) == GELIC_DESCR_DMA_CARDOWNED);
-	return 0;
+	return msgsize;
 }
 
 void abort(void)
