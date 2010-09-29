@@ -7,7 +7,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 
 Based on ethernetif.c from lwIP:
  * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
- * 
+ *
  * Author: Adam Dunkels <adam@sics.se>
  *
 */
@@ -59,7 +59,7 @@ struct gelicif {
 	int next_rx;
 	struct gelicif_buf txd;
 	struct gelicif_buf rxd[NUM_RX_BUFS];
-	
+
 };
 
 static void chain_rx(struct gelicif *gelicif, int i)
@@ -117,9 +117,9 @@ low_level_init(struct netif *netif)
 	gelicif->dma_buf = memalign(32, gelicif->buf_size);
 	if (!gelicif->dma_buf)
 		fatal("gelicif: DMA buffer alloc failed");
-	
+
 	printf("gelicif: allocated 0x%lx bytes for DMA buffer\n", gelicif->buf_size);
-	
+
 	memset(gelicif->dma_buf, 0, gelicif->buf_size);
 
 	/* set MAC hardware address length */
@@ -157,7 +157,7 @@ low_level_init(struct netif *netif)
 
 	u64 bus_addr = gelicif->bus_addr;
 	u8 *mem_addr = gelicif->dma_buf;
-	
+
 	gelicif->txd.descr = (void*)mem_addr;
 	gelicif->txd.bus_addr = bus_addr;
 	mem_addr += sizeof(struct gelic_descr);
@@ -172,7 +172,7 @@ low_level_init(struct netif *netif)
 	gelicif->txd.pkt = mem_addr;
 	bus_addr += pktbuf_size;
 	mem_addr += pktbuf_size;
-	
+
 	gelicif->last_rx = -1;
 	gelicif->next_rx = 0;
 	for (i=0; i<NUM_RX_BUFS; i++) {
@@ -247,7 +247,7 @@ low_level_output(struct netif *netif, struct pbuf *p)
 	s64 result;
 
 	//printf("gelicif: transmitting packet\n");
-	
+
 	u8 *pkt = gelicif->txd.pkt;
 	u64 total_len = 0;
 
@@ -273,7 +273,7 @@ low_level_output(struct netif *netif, struct pbuf *p)
 	gelicif->txd.descr->dmac_cmd_status = GELIC_DESCR_DMA_CMD_NO_CHKSUM | GELIC_DESCR_TX_DMA_FRAME_TAIL;
 	gelicif->txd.descr->result_size = 0;
 	gelicif->txd.descr->data_status = 0;
-	
+
 	/* send it and block until done */
 	result = lv1_net_start_tx_dma(gelicif->bus_id, gelicif->dev_id, gelicif->txd.bus_addr, 0);
 	if (result)
@@ -312,7 +312,7 @@ low_level_input(struct netif *netif)
 		return NULL;
 
 	//printf("gelicif: packet received (idx %d, status 0x%08x)\n", gelicif->next_rx, status);
-	
+
 	gelicif->next_rx++;
 	gelicif->next_rx %= NUM_RX_BUFS;
 	if (status & GELIC_DESCR_RX_DMA_CHAIN_END) {
@@ -338,12 +338,12 @@ low_level_input(struct netif *netif)
 	}
 
 	/* Gelic puts the vlan tag in front of the frame, so strip it */
-	
+
 	u8 *pkt = &gelicif->rxd[idx].pkt[2];
 	len -= 2;
-	
+
 	alloc_len = len;
-	
+
 #if ETH_PAD_SIZE
 	alloc_len += ETH_PAD_SIZE; /* allow room for Ethernet padding */
 #endif
