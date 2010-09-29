@@ -22,6 +22,10 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "gelic_netif.h"
 #include "netif/etharp.h"
 
+extern volatile u64 _thread1_active;
+extern volatile u64 _thread1_release;
+extern volatile u64 _thread1_vector;
+
 static struct netif eth;
 static struct ip_addr ipaddr, netmask, gw;
 
@@ -146,7 +150,12 @@ void start_net_ops(void)
 
 int main(void) {
 	debug_init();
-	printf("\n\nAsbestOS Stage 2 starting...\n");
+	printf("\n\nAsbestOS Stage 2 starting.\n");
+
+	printf("Waiting for thread 1...\n");
+	while(!_thread1_active);
+	printf("Thread 1 is alive, all systems go.\n");
+
 	net_init();
 	net_loop();
 	lv1_panic(1);

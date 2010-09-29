@@ -16,6 +16,20 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 	.global _start
 
 _start:
+	/* at this point, one thread is (hopefully) spinning in the decrementer vector */
+	/* release it here (it will already be in realmode and with IRQs disabled) */
+	lis r3, _threads_start@h
+	ori r3, r3, _threads_start@l
+	std r3, 0x918(0)
+
+_threads_start:
+	/* both threads end up running here */
+
+	/* if this is thread 1, go to _thread1_start */
+	mfspr r3, 0x88
+	cntlzw. r3, r3
+	bne _thread1_start
+
 	/* set up the TOC register */
 	lis r2, (__toc_start+0x8000)@h
 	ori r2, r2, (__toc_start+0x8000)@l
@@ -38,6 +52,26 @@ _bss_loop:
 	/* jump to main (panic if it returns) */
 	bl main
 	b panic
+
+	/* thread 1 runs this code - spin until we have a vector */
+_thread1_start:
+	lis r3, _thread1_active@h
+	ori r3, r3, _thread1_active@l
+	li r4, 1
+	std r4, 0(r3)
+1:
+	ld r4, 8(r3)
+	cmpldi r4, 0
+	beq 1b
+	ld r4, 16(r3)
+	mtctr r4
+	bctr
+
+	.align 3
+	.global _thread1_active, _thread1_release, _thread1_vector
+_thread1_active:	.quad 0
+_thread1_release:	.quad 0
+_thread1_vector:	.quad 0
 
 /* shutdown */
 	.global panic

@@ -70,3 +70,16 @@ return:
 	li r3, 0
 	blr
 
+.global __thread_catch
+.global __thread_catch_end
+
+/* code to overwrite the decrementer interrupt */
+__thread_catch:
+	ld r3, 0x918(0)
+	cmpldi r3, 0
+	beq __thread_catch
+	mtctr r3
+	bctr
+	nop
+	.quad 0
+__thread_catch_end:

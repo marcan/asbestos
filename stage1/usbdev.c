@@ -52,11 +52,23 @@ void *write_save;
 
 extern u8 __stage2[];
 
-void ipatch(void *addr, u32 instr)
+static void ipatch(void *addr, u32 instr)
 {
 	*(u32*)addr = instr;
 	asm ("dcbst 0, %0" : : "r"(addr));
 	asm ("icbi 0, %0" : : "r"(addr));
+}
+
+extern u8 __thread_catch[];
+extern u8 __thread_catch_end[];
+
+static void *memcpy(void *dst, const void *src, int len)
+{
+	int i;
+
+	for (i = 0; i < len; i++)
+		((unsigned char *)dst)[i] = ((unsigned char *)src)[i];
+	return dst;
 }
 
 CBTHUNK(int, device_attach, (int device_id))
@@ -76,6 +88,10 @@ CBTHUNK(int, device_attach, (int device_id))
 	*(void**)0x800000000033ffb0 = write;
 
 	printf("Hello, world from Lv-2 (stage1)\n");
+
+	u32 tid;
+	asm("mfspr %0, 0x88" : "=r"(tid));
+	printf("Current thread ID: %d\n", 2-(tid>>30));
 
 	control_transfer_t req = { TYPE_DEV2HOST, REQ_GET_STAGE2_SIZE, 0, 0, 4 };
 	u32 stage2_size = 0;
@@ -108,7 +124,17 @@ CBTHUNK(int, device_attach, (int device_id))
 		offset += blocksize;
 	}
 
-	printf("Stage2 loaded, taking the plunge...\n");
+	printf("Stage2 loaded\n");
+
+	asm("mfspr %0, 0x88" : "=r"(tid));
+	printf("Current thread ID: %d\n", 2-(tid>>30));
+
+	printf("Catching the other thread and taking the plunge...\n");
+
+	u8 *decr_vector = (void*)0x8000000000000900;
+	memcpy(decr_vector, __thread_catch, __thread_catch_end - __thread_catch);
+	asm("dcbf 0, %0" :: "r"(decr_vector));
+	asm("icbi 0, %0" :: "r"(decr_vector));
 
 	// __stage2 isn't a function descriptor, so use assembly directly
 	asm ("bl __stage2; b panic");
