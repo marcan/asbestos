@@ -16,14 +16,14 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 	.global _start
 
 _start:
-# set up the TOC register
+	/* set up the TOC register */
 	lis r2, (__toc_start+0x8000)@h
 	ori r2, r2, (__toc_start+0x8000)@l
-# set up the stack
+	/* set up the stack */
 	lis r1, _stack_bot@h
 	ori r1, r1, _stack_bot@l
 
-# clear BSS
+	/* clear BSS */
 	lis r3, __bss_start@h
 	ori r3, r3, __bss_start@l
 	lis r4, __bss_end@h
@@ -35,18 +35,18 @@ _bss_loop:
 	cmpld r3, r4
 	blt _bss_loop
 
-# jump to main (panic if it returns)
+	/* jump to main (panic if it returns) */
 	bl main
 	b panic
 
-# shutdown
+/* shutdown */
 	.global panic
 panic:
 	li r3, 0
 	li r11, LV1_PANIC
 	lv1call
 
-# reboot
+/* reboot */
 	.global reboot
 reboot:
 	li r3, 1

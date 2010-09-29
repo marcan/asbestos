@@ -21,17 +21,17 @@ _start:
 1:
 	mflr r30
 
-	# calculate our realmode base
+	/* calculate our realmode base */
 	addi r30, r30, (_start - 1b)
 	clrldi r30, r30, 1
 
-	# calculate realmode address of realmode
+	/* calculate realmode address of realmode */
 	addi r3, r30, (realmode - _start)
 
-	# switch to realmode
+	/* switch to realmode */
 	isync
 	mtsrr0 r3
-	# set MSR[DR:IR] = 00 and jump to srr0
+	/* set MSR[DR:IR] = 00 and jump to srr0 */
 	mfmsr r3
 	li r4, 0x30
 	andc r3, r3, r4
@@ -41,20 +41,20 @@ _start:
 realmode:
 
 	mfmsr r3
-	# disable interrupts
+	/* disable interrupts */
 	rldicl r3, r3, 48, 1
 	rotldi r3, r3, 16
 	mtmsrd r3, 0
 
 	mr r4, r30
 
-	# relocate to our real address
+	/* relocate to our real address */
 	lis r5, __self_start@h
 	ori r5, r5, __self_start@l
 	lis r6, __lzodata@h
 	ori r6, r6, __lzodata@l
 
-	# add the size of the LZO data
+	/* add the size of the LZO data */
 	sub r7, r6, r5
 	add r7, r7, r4
 	lwz r7, -4(r7)
@@ -81,21 +81,21 @@ _reloc_loop:
 	blt _reloc_loop
 _no_reloc:
 
-# continue running at the relocated location
+	/* continue running at the relocated location */
 	lis r4, reloced_start@h
 	ori r4, r4, reloced_start@l
 	mtctr r4
 	bctr
 
 reloced_start:
-# set up the TOC register
+	/* set up the TOC register */
 	lis r2, (__toc_start+0x8000)@h
 	ori r2, r2, (__toc_start+0x8000)@l
-# set up the stack
+	/* set up the stack */
 	lis r1, _stack_bot@h
 	ori r1, r1, _stack_bot@l
 
-# clear BSS
+	/* clear BSS */
 	lis r3, __bss_start@h
 	ori r3, r3, __bss_start@l
 	lis r4, __bss_end@h
@@ -110,18 +110,18 @@ _bss_loop:
 	blt _bss_loop
 _nobss:
 
-# jump to main (panic if it returns)
+	/* jump to main (panic if it returns) */
 	bl main
 	b panic
 
-# shutdown
+/* shutdown */
 	.global panic
 panic:
 	li r3, 0
 	li r11, LV1_PANIC
 	lv1call
 
-# reboot
+/* reboot */
 	.global reboot
 reboot:
 	li r3, 1

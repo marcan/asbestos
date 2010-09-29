@@ -19,10 +19,10 @@ _start:
 	bl 1f
 1:
 	mflr r4
-# calculate address of _start
+	/* calculate address of _start */
 	addi r4, r4, (_start - 1b)
 
-# relocate to our real address
+	/* relocate to our real address */
 	li r3, 1
 	sldi r3, r3, 63
 	oris r5, r3, __self_start@h
@@ -47,7 +47,7 @@ _reloc_loop:
 	cmpld r5, r6
 	blt _reloc_loop
 
-# continue running at the relocated location
+	/* continue running at the relocated location */
 	oris r4, r3, reloced_start@h
 	ori r4, r4, reloced_start@l
 	mtctr r4
@@ -57,12 +57,12 @@ reloced_start:
 	std r0, 0x10(sp)
 	stdu sp, -0x80(sp)
 
-# register the USB device driver
+	/* register the USB device driver */
 	oris r3, r3, usb_driver@h
 	ori r3, r3, usb_driver@l
 	bl _usbRegisterDriver
 
-# return from exploit
+	/* return from exploit */
 return:
 	addi sp, sp, 0x80
 	ld r0, 0x10(sp)
