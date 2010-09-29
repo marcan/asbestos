@@ -26,12 +26,12 @@ struct ethhdr {
 	u8 dest[6];
 	u8 src[6];
 	u16 type;
-};
+} __attribute__((packed));
 
 struct vlantag {
 	u16 vlan;
 	u16 subtype;
-};
+} __attribute__((packed));
 
 struct iphdr {
 	u8 ver_len;
@@ -44,33 +44,34 @@ struct iphdr {
 	u16 checksum;
 	u32 src;
 	u32 dest;
-};
+} __attribute__((packed));
 
 struct udphdr {
 	u16 src;
 	u16 dest;
 	u16 len;
 	u16 checksum;
-};
-
-struct debug_packet {
-	struct ethhdr eth;
-	struct vlantag vlan;
-	struct iphdr ip;
-	struct udphdr udp;
 } __attribute__((packed));
+
+static struct ethhdr *h_eth;
+static struct vlantag *h_vlan;
+static struct iphdr *h_ip;
+static struct udphdr *h_udp;
+
+static char *pmsg;
 
 #define MAX_MESSAGE_SIZE 1000
 
 struct debug_block {
 	volatile struct gelic_descr descr;
-	struct debug_packet pkt;
-	char message[MAX_MESSAGE_SIZE];
+	u8 pkt[1520];
 } __attribute__((packed));
 
 static struct debug_block dbg ALIGNED(32);
 
 static int debug_initialized = 0;
+
+static int header_size;
 
 void debug_init(void)
 {
@@ -96,24 +97,42 @@ void debug_init(void)
 
 	mac <<= 16;
 
+	h_eth = (struct ethhdr*)dbg.pkt;
+	
+	memset(&h_eth->dest, 0xff, 6);
+	memcpy(&h_eth->src, &mac, 6);
+
+	header_size = sizeof(struct ethhdr);
+
 	u64 vlan_id;
 	result = lv1_net_control(bus_id, dev_id, GELIC_LV1_GET_VLAN_ID, \
 							 GELIC_LV1_VLAN_TX_ETHERNET_0, 0, 0, &vlan_id, &v2);
-	if (result)
-		lv1_panic(0);
+	if (result == 0) {
+		h_eth->type = 0x8100;
 
-	memset(&dbg.pkt.eth.dest, 0xff, 6);
-	memcpy(&dbg.pkt.eth.src, &mac, 6);
-	dbg.pkt.eth.type = 0x8100;
-	dbg.pkt.vlan.vlan = vlan_id;
-	dbg.pkt.vlan.subtype = 0x0800;
-	dbg.pkt.ip.ver_len = 0x45;
-	dbg.pkt.ip.ttl = 10;
-	dbg.pkt.ip.proto = 0x11;
-	dbg.pkt.ip.src = 0x00000000;
-	dbg.pkt.ip.dest = 0xffffffff;
-	dbg.pkt.udp.src = DEBUG_PORT;
-	dbg.pkt.udp.dest = DEBUG_PORT;
+		header_size += sizeof(struct vlantag);
+		h_vlan = (struct vlantag*)(h_eth+1);
+		h_vlan->vlan = vlan_id;
+		h_vlan->subtype = 0x0800;
+		h_ip = (struct iphdr*)(h_vlan+1);
+	} else {
+		h_eth->type = 0x0800;
+		h_ip = (struct iphdr*)(h_eth+1);
+	}
+
+	header_size += sizeof(struct iphdr);
+	h_ip->ver_len = 0x45;
+	h_ip->ttl = 10;
+	h_ip->proto = 0x11;
+	h_ip->src = 0x00000000;
+	h_ip->dest = 0xffffffff;
+
+	header_size += sizeof(struct udphdr);
+	h_udp = (struct udphdr*)(h_ip+1);
+	h_udp->src = DEBUG_PORT;
+	h_udp->dest = DEBUG_PORT;
+
+	pmsg = (char*)(h_udp+1);
 
 	debug_initialized = 1;
 }
@@ -122,24 +141,24 @@ int printf(const char *fmt, ...)
 {
 	va_list ap;
 
+	if (!debug_initialized)
+		return 0;
+
 	va_start(ap, fmt);
-	size_t msgsize = vsnprintf(dbg.message, MAX_MESSAGE_SIZE, fmt, ap);
+	size_t msgsize = vsnprintf(pmsg, MAX_MESSAGE_SIZE, fmt, ap);
 	va_end(ap);
 
-	if (!debug_initialized)
-		return msgsize;
+	dbg.descr.buf_size = header_size + msgsize;
+	h_ip->total_length = msgsize + sizeof(struct udphdr) + sizeof(struct iphdr);
+	h_udp->len = msgsize + sizeof(struct udphdr);
 
-	dbg.descr.buf_size = sizeof(dbg.pkt) + msgsize;
-	dbg.pkt.ip.total_length = msgsize + sizeof(struct udphdr) + sizeof(struct iphdr);
-	dbg.pkt.udp.len = msgsize + sizeof(struct udphdr);
-
-	dbg.pkt.ip.checksum = 0;
+	h_ip->checksum = 0;
 	u32 sum = 0;
-	u16 *p = (u16*)&dbg.pkt.ip;
+	u16 *p = (u16*)h_ip;
 	int i;
 	for (i=0; i<5; i++)
 		sum += *p++;
-	dbg.pkt.ip.checksum = ~(sum + (sum>>16));
+	h_ip->checksum = ~(sum + (sum>>16));
 
 	dbg.descr.dmac_cmd_status = GELIC_DESCR_DMA_CMD_NO_CHKSUM | GELIC_DESCR_TX_DMA_FRAME_TAIL;
 	dbg.descr.result_size = 0;

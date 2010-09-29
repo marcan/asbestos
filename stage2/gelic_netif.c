@@ -53,6 +53,7 @@ struct gelicif {
 	u64 bus_addr;
 	void *dma_buf;
 	u64 buf_size;
+	int need_vlan;
 	u16 vlan_id;
 	int last_rx;
 	int next_rx;
@@ -98,9 +99,10 @@ low_level_init(struct netif *netif)
 
 	printf("gelicif: low_level_init()\n");
 
+	/* maximum transfer unit */
 	netif->mtu = 1500;
 
-	u64 pktbuf_size = netif->mtu + 16;
+	u64 pktbuf_size = netif->mtu + 18;
 	pktbuf_size = (pktbuf_size+127)&(~127);
 
 	gelicif->bus_id = 1;
@@ -128,17 +130,17 @@ low_level_init(struct netif *netif)
 	mac <<= 16;
 	memcpy(netif->hwaddr, &mac, 6);
 
-	/* maximum transfer unit */
-	netif->mtu = 1500;
-
 	u64 vlan_id;
 	result = lv1_net_control(gelicif->bus_id, gelicif->dev_id, GELIC_LV1_GET_VLAN_ID, \
 							 GELIC_LV1_VLAN_TX_ETHERNET_0, 0, 0, &vlan_id, &v2);
-	if (result)
-		fatal("gelicif: lv1_net_control(GELIC_LV1_GET_VLAN_ID) failed");
-
-	gelicif->vlan_id = vlan_id;
-	printf("gelicif: VLAN ID is 0x%04x\n", gelicif->vlan_id);
+	if (result == 0) {
+		gelicif->need_vlan = 1;
+		gelicif->vlan_id = vlan_id;
+		printf("gelicif: VLAN ID is 0x%04x\n", gelicif->vlan_id);
+	} else {
+		gelicif->need_vlan = 0;
+		printf("gelicif: no VLAN in use\n");
+	}
 
 	result = map_dma_mem(gelicif->bus_id, gelicif->dev_id, gelicif->dma_buf, \
 						 gelicif->buf_size, &gelicif->bus_addr);
@@ -218,18 +220,19 @@ low_level_output(struct netif *netif, struct pbuf *p)
 	pbuf_header(p, -ETH_PAD_SIZE); /* drop the padding word */
 #endif
 
-	total_len = pbuf_copy_partial(p, pkt, 12, 0);
+	if (gelicif->need_vlan) {
+		total_len = pbuf_copy_partial(p, pkt, 12, 0);
+		/* Insert the VLAN tag */
+		pkt[12] = 0x81;
+		pkt[13] = 0x00;
+		pkt[14] = gelicif->vlan_id >> 8;
+		pkt[15] = gelicif->vlan_id;
+		total_len += 4;
+		total_len += pbuf_copy_partial(p, &pkt[16], netif->mtu + 2, 12);
+	} else {
+		total_len = pbuf_copy_partial(p, pkt, netif->mtu + 14, 0);
+	}
 
-	/* Insert the VLAN tag */
-	pkt[12] = 0x81;
-	pkt[13] = 0x00;
-	pkt[14] = gelicif->vlan_id >> 8;
-	pkt[15] = gelicif->vlan_id;
-	total_len += 4;
-	
-	total_len += pbuf_copy_partial(p, &pkt[16], 1502, 12);
-
-	
 	/* build the descriptor */
 	gelicif->txd.descr->buf_size = total_len;
 	gelicif->txd.descr->dmac_cmd_status = GELIC_DESCR_DMA_CMD_NO_CHKSUM | GELIC_DESCR_TX_DMA_FRAME_TAIL;
