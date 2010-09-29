@@ -188,6 +188,11 @@ low_level_init(struct netif *netif)
 	/* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
 	netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
 
+	/* clear any existing RX DMA */
+	result = lv1_net_stop_rx_dma(gelicif->bus_id, gelicif->dev_id, 0);
+	if (result == 0)
+		printf("gelicif: cleared old RX DMA job\n");
+
 	/* start the RX DMA */
 	result = lv1_net_start_rx_dma(gelicif->bus_id, gelicif->dev_id, gelicif->rxd[0].bus_addr, 0);
 	if (result)
