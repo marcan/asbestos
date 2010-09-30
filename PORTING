@@ -1,0 +1,78 @@
+================================================================================
+                         Porting AsbestOS to a device
+================================================================================
+
+AsbestOS is designed to be easy to port to any implementation of the Lv-2 USB
+exploit (or, indeed, even future exploits). There are two main components
+in the distribution:
+
+- stage1
+- stage2
+
+Stage1 is the first code portion of AsbestOS that runs (it may be preceded by
+an "egghunt" exploit phase on some versions of the exploit, but that's up to the
+exploit). It installs a USB driver into Lv-2, then waits until the "final" USB
+device is connected. Once it is, it requests stage2 in chunks, then launches it.
+It is also responsible for initially catching both CPU threads.
+
+Stage2 is the main portion of AsbestOS and is responsible for replacing Lv-2,
+cleaning up after it, setting up the initial network, and loading the kernel via
+TFTP. It is also compressed and wrapped with a decompressor stub.
+
+AsbestOS has very few requirements, making it very easy to port to existing
+implementations of the USB exploit, whether on microcontroller dongles, portable
+media players, phones, etc. The only requirements are:
+
+- At least 40KB of free internal or external storage (currently),
+- Implementation of a few USB control messages to deliver stage2 on-demand,
+- An incarnation of the exploit able to execute at least a <3KB buffer of code
+  (no requirements on location or input registers).
+
+Your implementation must eventually load and direct execution to the code in
+stage1.bin. This code is position-independent (with some overlapping exceptions)
+and does not require any specific values for input arguments. It will return to
+the caller when done installing the device driver. If your implementation
+requires any headers before the payload (e.g. descriptors, metadata), keep those
+and simply replace the data where the executable code begins.
+
+The device must eventually virtually insert a USB device with vendor ID 0xAAAA
+and Product ID 0x3713. At this stage, stage1 will issue the following USB
+control requests to it:
+
+PRINT (bmRequestType=0x40, bRequest=1, wLength=len)
+	Print a debug message. If you don't have any usable debug output, just
+	accept and discard the data.
+GET_STAGE2_SIZE (bmRequestType=0xc0, bRequest=2, wLength=4)
+	Get the total size of stage2. You should return 4 bytes indicating the size
+	of stage2 in BIG-ENDIAN byte ordering.
+READ_STAGE2_BLOCK (bmRequestType=0xc0, bRequest=3, wIndex=offset, wLength=len)
+	Return a block of stage2. The stage1 code issues reads in blocks of 0x1000
+	bytes, except for the last block. wIndex is the offset in units of 0x1000
+	bytes (that is, the offset >> 12).
+
+For example, on a microcontroller with at least 64KB of Flash, you could build
+in stage2, while on a microcontroller with less Flash you could stream it from
+an external memory (EEPROM, Flash, SD card, ...) or even through a serial port
+from a PC.
+
+In other words, on any device currently executing a PSJailbreak-derived payload,
+you just need to replace it with stage1, add in stage2, and add three request
+handlers to deliver stage2 when requested, and change the final device VID to
+0x3713.
+
+If you believe that the current vanilla stage1 will not work for your device,
+please drop me a line and I'll try to accomodate for it. It's easier if I add
+a few configuration options and keep a common codebase instead of ending up with
+a dozen minor forks for device-specific tweaks. There shouldn't be much to
+change in stage1 anyway, except for possibly timing.
+
+Licensing notes:
+
+Stage1 and stage2 are licensed under the GNU General Public License, version 2.
+However, you can insert stage1/2 into any implementation of the exploit, which
+need not be licensed under the GPLv2. This is because simply embedding a binary
+blob isn't considered "linking" in any practical sense (even if you technically
+use the linker); it isn't any different from, say, embedding GPLv3 code inside
+an initramfs built into a GPLv2 Linux kernel. Any modifications that you make
+to the stage1 or stage2 code, must be licensed under the GPLv2. As usual,
+please make sure that you comply with all the licenses involved.
