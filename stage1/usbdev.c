@@ -78,6 +78,8 @@ static void *memcpy(void *dst, const void *src, int len)
 	return dst;
 }
 
+void disirq(void);
+
 CBTHUNK(int, device_attach, (int device_id))
 {
 	ep_pipe = usbOpenEndpoint(device_id, NULL);
@@ -151,12 +153,21 @@ CBTHUNK(int, device_attach, (int device_id))
 	printf("Current thread ID: %d\n", 2-(tid>>30));
 
 	printf("Catching the other thread and taking the plunge...\n");
+	disirq();
 
 	u8 *decr_vector = (void*)0x8000000000000900;
 	memcpy(decr_vector, __thread_catch, __thread_catch_end - __thread_catch);
 	flushblock(decr_vector);
 
-	// __stage2 isn't a function descriptor, so use assembly directly
+	int i;
+	for (i=0x100; i<0x1800; i+=0x80) {
+		if (i == 0x900)
+			continue;
+		u32 *vector = (void*)(0x8000000000000000+i);
+		*vector = 0x48000902; // ba 0x900
+		flushblock(vector);
+	}
+
 	asm ("bl __stage2; b panic");
 	return 0;
 }

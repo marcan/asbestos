@@ -70,6 +70,15 @@ return:
 	li r3, 0
 	blr
 
+.global disirq
+disirq:
+	mfmsr r3
+	/* disable interrupts */
+	rldicl r3, r3, 48, 1
+	rotldi r3, r3, 16
+	mtmsrd r3, 1
+	blr
+
 .global __thread_catch
 .global __thread_catch_end
 
