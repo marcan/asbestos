@@ -12,6 +12,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "malloc.h"
 #include "time.h"
 #include "klaunch.h"
+#include "device.h"
 
 #include "lwip/init.h"
 #include "lwip/dhcp.h"
@@ -157,6 +158,12 @@ void lv2_cleanup(void)
 	int i,j;
 	printf("Cleaning up after Lv-2...\n");
 
+	if (lv1_gpu_close() == 0)
+		printf("GPU closed\n");
+
+	if (lv1_deconfigure_virtual_uart_irq() == 0)
+		printf("Deconfigured VUART IRQ\n");
+
 	u64 ppe_id;
 	result = lv1_get_logical_ppe_id(&ppe_id);
 
@@ -178,6 +185,8 @@ void lv2_cleanup(void)
 				count++;
 
 	printf("Disconnected %d IRQ plugs\n", count);
+
+	printf("Closed %d devices\n", close_all_devs());
 
 	for (i=0; i<256; i++) {
 		if (lv1_disable_logical_spe(i, 0) == 0)
@@ -239,7 +248,13 @@ void lv2_cleanup(void)
 					total += size;
 					printf("CLEANED\n");
 				} else if (flags != 0) {
-					printf("IOMEM\n");
+					if ((flags>>60) == 0xc) {
+						if (lv1_unmap_htab(start_address) == 0)
+							printf("CLEANED ");
+						printf("HTAB\n");
+					} else {
+						printf("IOMEM\n");
+					}
 				} else {
 					printf("ERROR\n");
 				}

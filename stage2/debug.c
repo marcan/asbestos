@@ -82,6 +82,11 @@ void debug_init(void)
 	if (result)
 		lv1_panic(0);
 
+	lv1_close_device(bus_id, dev_id);
+	result = lv1_open_device(bus_id, dev_id, 0);
+	if (result)
+		lv1_panic(0);
+	
 	result = map_dma_mem(bus_id, dev_id, &dbg, sizeof(dbg), &bus_addr);
 	if (result)
 		lv1_panic(0);

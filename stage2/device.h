@@ -24,5 +24,6 @@ int map_dma_mem(int bus_id, int dev_id, void *start, size_t len, u64 *bus_addr);
 int unmap_dma_mem(int bus_id, int dev_id, u64 bus_addr, size_t len);
 
 int find_device_by_type(int type, int index, int *bus_id, int *dev_id, int *irq);
+int close_all_devs(void);
 
 #endif

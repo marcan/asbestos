@@ -8,6 +8,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 
 #include "types.h"
 #include "lv1call.h"
+#include "device.h"
 #include "debug.h"
 
 int map_dma_mem(int bus_id, int dev_id, void *start, size_t len, u64 *r_bus_addr)
@@ -129,4 +130,66 @@ int find_device_by_type(int type, int index, int *pbus_id, int *pdev_id, int *pi
 
 	printf("Device not found\n");
 	return -1;
+}
+
+int close_all_devs(void)
+{
+	u64 v2;
+	u64 bus_ndx;
+	s64 result;
+	int gelic_bus, gelic_dev;
+
+	if (find_device_by_type(DEV_TYPE_ETH, 0, &gelic_bus, &gelic_dev, NULL) != 0) {
+		gelic_bus = gelic_dev = -1;
+	}
+
+	int closed = 0;
+
+	printf("Closing all devices...\n");
+	for (bus_ndx=0; bus_ndx<10; bus_ndx++) {
+		u64 bus_id=0, bus_type=0, num_dev=0;
+
+		result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+											   FIELD("type",0), 0, 0, &bus_type, &v2);
+		if (result)
+			continue;
+		result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+											   FIELD("id",0), 0, 0, &bus_id, &v2);
+		if (result)
+			continue;
+		result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+											   FIELD("num_dev",0), 0, 0, &num_dev, &v2);
+		if (result)
+			continue;
+
+		printf("Bus #%ld id %ld type %ld num_dev %ld\n", bus_ndx, bus_id, bus_type, num_dev);
+		u64 dev_ndx;
+		for (dev_ndx=0; dev_ndx<num_dev; dev_ndx++) {
+			s64 dev_id=0, dev_type=0, dev_intr=0;
+
+			result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+												   FIELD("dev",dev_ndx), FIELD("id",0), 0, (u64*)&dev_id, &v2);
+			if (result)
+				dev_id = -1;
+			result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+												   FIELD("dev",dev_ndx), FIELD("type",0), 0, (u64*)&dev_type, &v2);
+			if (result)
+				dev_type = -1;
+			result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+												   FIELD("dev",dev_ndx), FIELD("intr",0), 0, (u64*)&dev_intr, &v2);
+			if (result)
+				dev_intr = -1;
+
+			printf("- Dev #%ld id %ld type %ld intr %ld ", dev_ndx, dev_id, dev_type, dev_intr);
+			if (bus_id == gelic_bus && dev_id == gelic_dev)
+				printf("KEPT (gelic)\n");
+			else if (lv1_close_device(bus_id, dev_id) == 0) {
+				printf("CLOSED\n");
+				closed++;
+			} else {
+				printf("\n");
+			}
+		}
+	}
+	return closed;
 }
