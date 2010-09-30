@@ -19,20 +19,23 @@ enum {
 #define TYPE_HOST2DEV 0x40
 #define TYPE_DEV2HOST 0xc0
 
-// TODO: figure out lv2 synchronization primitives so I can wait on callbacks
-// instead of this horrid hack
-static void delay(int i)
+volatile int cv;
+volatile int u_result, u_count;
+
+CBTHUNK(void, usbcb, (int result, int count, void *arg))
 {
-	volatile int j = i;
-	while(j--);
+	u_result = result;
+	u_count = count;
+	cv=1;
 }
 
 // printf hook
 CBTHUNK(int, write, (char *data, int len, void *blah))
 {
 	control_transfer_t req = { TYPE_HOST2DEV, REQ_PRINT, 0, 0, len };
-	usbControlTransfer(ep_pipe, &req, data, NULL, NULL);
-	delay(0x10000);
+	cv = 0;
+	usbControlTransfer(ep_pipe, &req, data, usbcb, NULL);
+	while (!cv);
 	return len;
 }
 
@@ -52,11 +55,15 @@ void *write_save;
 
 extern u8 __stage2[];
 
+static void flushblock(void *addr)
+{
+	asm("dcbst 0, %0; sync; icbi 0, %0" :: "r"(addr));
+}
+
 static void ipatch(void *addr, u32 instr)
 {
 	*(u32*)addr = instr;
-	asm ("dcbst 0, %0" : : "r"(addr));
-	asm ("icbi 0, %0" : : "r"(addr));
+	flushblock(addr);
 }
 
 extern u8 __thread_catch[];
@@ -94,15 +101,15 @@ CBTHUNK(int, device_attach, (int device_id))
 	printf("Current thread ID: %d\n", 2-(tid>>30));
 
 	control_transfer_t req = { TYPE_DEV2HOST, REQ_GET_STAGE2_SIZE, 0, 0, 4 };
-	u32 stage2_size = 0;
+	volatile u32 stage2_size = 0;
 	u32 offset = 0;
 	u8 *p = __stage2;
 
-	usbControlTransfer(ep_pipe, &req, &stage2_size, NULL, NULL);
-	delay(0x10000);
-
-	if (!stage2_size) {
-		printf("No stage2! Panicking...\n");
+	cv = 0;
+	usbControlTransfer(ep_pipe, &req, (u32*)&stage2_size, usbcb, NULL);
+	while(!cv);
+	if (u_result != 0 || u_count != 4) {
+		printf("USB request failed: result %d, count: 0x%x\n", u_result, u_count);
 		panic();
 	}
 
@@ -111,17 +118,31 @@ CBTHUNK(int, device_attach, (int device_id))
 	req.bRequest = REQ_READ_STAGE2_BLOCK;
 
 	while (offset < stage2_size) {
-		u32 blocksize = 0x1000;
+		int blocksize = 0x1000;
 		if (blocksize > (stage2_size - offset))
 			blocksize = stage2_size - offset;
 
 		req.wIndex = offset >> 12;
 		req.wLength = blocksize;
-		usbControlTransfer(ep_pipe, &req, p, NULL, NULL);
-		delay(0x200000);
+
+		cv = 0;
+		usbControlTransfer(ep_pipe, &req, p, usbcb, NULL);
+		while(!cv);
+		if (u_result != 0 || u_count != blocksize) {
+			printf("USB request failed: result %d, count: 0x%x\n", u_result, u_count);
+			panic();
+		}
 
 		p += blocksize;
 		offset += blocksize;
+	}
+
+	p = __stage2;
+	offset = 0;
+	while (offset < stage2_size) {
+		flushblock(p);
+		offset += 32;
+		p += 32;
 	}
 
 	printf("Stage2 loaded\n");
@@ -133,8 +154,7 @@ CBTHUNK(int, device_attach, (int device_id))
 
 	u8 *decr_vector = (void*)0x8000000000000900;
 	memcpy(decr_vector, __thread_catch, __thread_catch_end - __thread_catch);
-	asm("dcbf 0, %0" :: "r"(decr_vector));
-	asm("icbi 0, %0" :: "r"(decr_vector));
+	flushblock(decr_vector);
 
 	// __stage2 isn't a function descriptor, so use assembly directly
 	asm ("bl __stage2; b panic");
