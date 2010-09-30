@@ -82,6 +82,8 @@ void debug_init(void)
 	if (result)
 		lv1_panic(0);
 
+	lv1_net_stop_tx_dma(bus_id, dev_id, 0);
+	lv1_net_stop_rx_dma(bus_id, dev_id, 0);
 	lv1_close_device(bus_id, dev_id);
 	result = lv1_open_device(bus_id, dev_id, 0);
 	if (result)
@@ -169,7 +171,9 @@ int printf(const char *fmt, ...)
 	dbg.descr.result_size = 0;
 	dbg.descr.data_status = 0;
 
-	lv1_net_start_tx_dma(bus_id, dev_id, bus_addr, 0);
+	s64 result = lv1_net_start_tx_dma(bus_id, dev_id, bus_addr, 0);
+	if (result)
+		lv1_panic(0);
 
 	while ((dbg.descr.dmac_cmd_status & GELIC_DESCR_DMA_STAT_MASK) == GELIC_DESCR_DMA_CARDOWNED);
 	return msgsize;
