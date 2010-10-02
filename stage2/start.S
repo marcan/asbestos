@@ -36,6 +36,10 @@ _threads_start:
 	/* set up the stack */
 	lis r1, _stack_bot@h
 	ori r1, r1, _stack_bot@l
+	/* make space for the first stack frame */
+	addi r1, r1, 64
+	li r0, 0
+	std r0, 0(r1)
 
 	/* clear BSS */
 	lis r3, __bss_start@h

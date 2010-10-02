@@ -226,9 +226,9 @@
 
 
 LV1_CALL(allocate_memory,                               4, 2,   0 )
-// LV1_CALL(write_htab_entry,                              4, 0,   1 )
-// LV1_CALL(construct_virtual_address_space,               3, 2,   2 )
-// LV1_CALL(invalidate_htab_entries,                       5, 0,   3 )
+LV1_CALL(write_htab_entry,                              4, 0,   1 )
+LV1_CALL(construct_virtual_address_space,               3, 2,   2 )
+LV1_CALL(invalidate_htab_entries,                       5, 0,   3 )
 LV1_CALL(get_virtual_address_space_id_of_ppe,           1, 1,   4 )
 LV1_CALL(query_logical_partition_address_region_info,   1, 5,   6 )
 LV1_CALL(select_virtual_address_space,                  1, 0,   7 )

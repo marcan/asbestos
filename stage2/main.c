@@ -13,6 +13,8 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "time.h"
 #include "klaunch.h"
 #include "device.h"
+#include "exceptions.h"
+#include "mm.h"
 
 #include "lwip/init.h"
 #include "lwip/dhcp.h"
@@ -108,6 +110,7 @@ void tftp_cb(void *arg, struct tftp_client *clt, enum tftp_status status, size_t
 		netif_remove(&eth);
 		gelicif_shutdown(&eth);
 
+		mm_shutdown();
 		printf("Relocating kernel...\n");
 		kload(recvd);
 		printf("Letting thread1 run loose...\n");
@@ -172,10 +175,9 @@ void lv2_cleanup(void)
 	u64 vas_id;
 	result = lv1_get_virtual_address_space_id_of_ppe(ppe_id , &vas_id );
 	printf("VAS id: %ld\n", vas_id);
-
-	for (i=0; i<16; i++)
-		if (lv1_destruct_virtual_address_space(i) == 0)
-			printf("Destroyed VAS %d\n", i);
+	result = lv1_select_virtual_address_space(0);
+	if (result == 0)
+		printf("Selected VAS 0\n");
 
 	int count = 0;
 
@@ -264,17 +266,24 @@ void lv2_cleanup(void)
 	}
 
 	printf("Cleaned up %ld bytes in %d blocks\n", total, blocks);
+
+	for (i=0; i<16; i++)
+	if (lv1_destruct_virtual_address_space(i) == 0)
+		printf("Destroyed VAS %d\n", i);
 }
 
-int main(void) {
+
+int main(void)
+{
 	debug_init();
 	printf("\n\nAsbestOS Stage 2 starting.\n");
-
 	printf("Waiting for thread 1...\n");
 	while(!_thread1_active);
 	printf("Thread 1 is alive, all systems go.\n");
 
+	exceptions_init();
 	lv2_cleanup();
+	mm_init();
 
 	net_init();
 	net_loop();
