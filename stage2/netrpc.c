@@ -26,7 +26,8 @@ enum {
 	RPC_WRITEMEM,
 	RPC_HVCALL,
 	RPC_ADDMMIO,
-	RPC_DELMMIO
+	RPC_DELMMIO,
+	RPC_CLRMMIO
 };
 
 struct rpc_header {
@@ -195,6 +196,10 @@ static void netrpc_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct 
 			break;
 		case RPC_DELMMIO:
 			hdr->reply.retcode = mm_delmmio(hdr->addmmio.start);
+			sendbuf(REPLY_SIZE, addr, port);
+			break;
+		case RPC_CLRMMIO:
+			hdr->reply.retcode = mm_clrmmio();
 			sendbuf(REPLY_SIZE, addr, port);
 			break;
 		default:

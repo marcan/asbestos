@@ -20,7 +20,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 int seg_idx = 1;
 u64 vas_id;
 
-#define NUM_MMIO 64
+#define NUM_MMIO 128
 
 int mm_inited = 0;
 
@@ -72,6 +72,12 @@ int mm_delmmio(u64 start)
 	}
 	printf("WARNING: Tried to delete nonexistent MMIO region 0x%016lx\n", start);
 	return -1;
+}
+
+int mm_clrmmio(void)
+{
+	memset(mmios, 0, sizeof(mmios));
+	return 0;
 }
 
 int mm_ismmio(u64 addr)

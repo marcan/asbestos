@@ -19,6 +19,7 @@ void mm_shutdown(void);
 
 int mm_addmmio(u64 start, u32 size);
 int mm_delmmio(u64 start);
+int mm_clrmmio(void);
 int mm_ismmio(u64 addr);
 
 void sync_before_exec(void *addr, int len);

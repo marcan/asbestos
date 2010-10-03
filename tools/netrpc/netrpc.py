@@ -101,6 +101,7 @@ class RPCClient(object):
 	RPC_HVCALL = 3
 	RPC_ADDMMIO = 4
 	RPC_DELMMIO = 5
+	RPC_CLRMMIO = 6
 	def __init__(self, host, port=1337):
 		self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.s.connect((host, port))
@@ -157,7 +158,7 @@ class RPCClient(object):
 			if blk > 1024:
 				blk = 1024
 			data += self.readmemblk(addr, blk)
-            addr += blk
+			addr += blk
 			length -= blk
 		return data
 
@@ -166,7 +167,7 @@ class RPCClient(object):
 			blk = data[:1024]
 			data = data[1024:]
 			self.readmemblk(addr, blk)
-            addr += blk
+			addr += blk
 
 	def read8(self, addr):
 		return struct.unpack(">B", self.readmem(addr, 1))[0]
@@ -214,9 +215,13 @@ class RPCClient(object):
 		ret = self.rpc(self.RPC_ADDMMIO, args)
 		self.chkret(ret)
 
-	def delmmio(self, start, size):
+	def del_mmio(self, start):
 		args = struct.pack(">Q", start)
-		ret = self.rpc(self.RPC_ADDMMIO, args)
+		ret = self.rpc(self.RPC_DELMMIO, args)
+		self.chkret(ret)
+
+	def clr_mmio(self):
+		ret = self.rpc(self.RPC_CLRMMIO)
 		self.chkret(ret)
 
 class LV1Client(RPCClient):
