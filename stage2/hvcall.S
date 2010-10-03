@@ -799,3 +799,35 @@ _GLOBAL(_##API_NAME)				\
 
 #define LV1_CALL(name, in, out, num) LV1_##in##_IN_##out##_OUT(lv1_##name, num)
 #include "lv1call.h"
+
+_GLOBAL(hvcallv)
+	mflr r0
+	std r0, 16(r1)
+	std r3, 32(r1) /* meh ABI abuse */
+
+	ld r11, 0x40(r3)
+	ld r10, 0x38(r3)
+	ld r9, 0x30(r3)
+	ld r8, 0x28(r3)
+	ld r7, 0x20(r3)
+	ld r6, 0x18(r3)
+	ld r5, 0x10(r3)
+	ld r4, 0x08(r3)
+	ld r3, 0x00(r3)
+
+	lv1call
+
+	mr r0, r3
+	ld r3, 32(r1)
+	std r0, 0x00(r3)
+	std r4, 0x08(r3)
+	std r5, 0x10(r3)
+	std r6, 0x18(r3)
+	std r7, 0x20(r3)
+	std r8, 0x28(r3)
+	std r9, 0x30(r3)
+	std r10, 0x38(r3)
+
+	ld r0, 16(r1)
+	mtlr r0
+	blr

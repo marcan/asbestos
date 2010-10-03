@@ -220,6 +220,8 @@
     {return _lv1_##name(LV1_##in##_IN_##out##_OUT_ARGS);}
 #endif
 
+void hvcallv(u64 *regs);
+
 #endif /* !defined(__ASSEMBLY__) */
 
 /* lv1 call table */
