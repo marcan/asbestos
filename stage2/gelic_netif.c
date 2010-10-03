@@ -372,6 +372,7 @@ low_level_input(struct netif *netif)
 
 		LINK_STATS_INC(link.recv);
 	} else {
+		printf("gelicif: Could not alloc pbuf!\n");
 		//drop packet();
 		LINK_STATS_INC(link.memerr);
 		LINK_STATS_INC(link.drop);
