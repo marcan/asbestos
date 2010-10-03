@@ -12,6 +12,7 @@ LDFLAGS += -Wl,--gc-sections -Wl,-T,stage2.ld
 STUB_CFLAGS := $(CFLAGS) -Os -Wall -ffunction-sections -I. -Iuncompress/
 CFLAGS += -Os -Wall -I. -ffunction-sections \
 	-Ilwip/src/include -Ilwip/src/include/ipv4 -Ilwip/arch/include
+ASFLAGS = -D__ASSEMBLY__ -I.
 
 DEPDIR = .deps
 
@@ -57,7 +58,7 @@ stage2_raw.elf: $(OBJS) stage2.ld
 %.o: %.S
 	@echo "  ASSEMBLE  $<"
 	@mkdir -p $(DEPDIR)
-	@$(PREFIX)gcc $(CFLAGS) -Wp,-MMD,$(DEPDIR)/$(*F).d,-MQ,"$@",-MP -c -o $@ $<
+	@$(PREFIX)gcc $(ASFLAGS) -Wp,-MMD,$(DEPDIR)/$(*F).d,-MQ,"$@",-MP -c -o $@ $<
 
 %.o: %.c
 	@echo "  COMPILE   $<"
