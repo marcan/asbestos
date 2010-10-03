@@ -157,6 +157,7 @@ class RPCClient(object):
 			if blk > 1024:
 				blk = 1024
 			data += self.readmemblk(addr, blk)
+            addr += blk
 			length -= blk
 		return data
 
@@ -165,6 +166,7 @@ class RPCClient(object):
 			blk = data[:1024]
 			data = data[1024:]
 			self.readmemblk(addr, blk)
+            addr += blk
 
 	def read8(self, addr):
 		return struct.unpack(">B", self.readmem(addr, 1))[0]
