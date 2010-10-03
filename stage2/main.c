@@ -6,6 +6,7 @@ This code is licensed to you under the terms of the GNU GPL, version 2;
 see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 */
 
+#include "config.h"
 #include "types.h"
 #include "lv1call.h"
 #include "debug.h"
@@ -138,6 +139,7 @@ void start_net_ops(void)
 	else
 		printf(" Bootfile:    NONE\n");
 
+#ifdef AUTO_TFTP
 	if (eth.dhcp->offered_si_addr.addr == 0 || !eth.dhcp->boot_file_name) {
 		printf("Missing boot settings, cannot continue. Shutting down...\n");
 		lv1_panic(0);
@@ -153,6 +155,7 @@ void start_net_ops(void)
 	recv_buf = __zimage_load_base;
 
 	tftp_get(tftp, (char*)eth.dhcp->boot_file_name, recv_buf, 10*1024*1024, tftp_cb, NULL);
+#endif
 }
 
 void lv2_cleanup(void)
