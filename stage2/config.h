@@ -12,4 +12,8 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 // Automatically start TFTP download and boot
 #define AUTO_TFTP
 
+// Set up a server to control AsbestOS over the network
+//#define NETRPC_ENABLE
+
+
 #endif

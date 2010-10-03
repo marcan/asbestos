@@ -16,6 +16,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "device.h"
 #include "exceptions.h"
 #include "mm.h"
+#include "netrpc.h"
 
 #include "lwip/init.h"
 #include "lwip/dhcp.h"
@@ -97,34 +98,46 @@ void net_loop(void) {
 extern u8 __zimage_load_base[];
 u8 *recv_buf;
 
-struct tftp_client *tftp;
+struct tftp_client *tftp = NULL;
+
+void shutdown_and_launch(size_t recvd);
 
 void tftp_cb(void *arg, struct tftp_client *clt, enum tftp_status status, size_t recvd)
 {
 	printf("Transfer complete, status %d. Image size: %ld bytes\n", status, recvd);
 
 	if (status == TFTP_STATUS_OK) {
-		printf("Releasing DHCP lease...\n");
-		dhcp_release(&eth);
-		dhcp_stop(&eth);
-		printf("Shutting down network...\n");
-		netif_remove(&eth);
-		gelicif_shutdown(&eth);
-
-		mm_shutdown();
-		printf("Relocating kernel...\n");
-		kload(recvd);
-		printf("Letting thread1 run loose...\n");
-		_thread1_vector = 0x100;
-		_thread1_release = 1;
-		printf("Taking the plunge...\n");
-		klaunch();
-		fatal("klaunch returned\n");
+		shutdown_and_launch(recvd);
 	} else {
 		printf("Transfer did not complete successfully\n");
 		printf("Rebooting...\n");
 		lv1_panic(1);
 	}
+}
+
+void shutdown_and_launch(size_t recvd)
+{
+#ifdef NETRPC_ENABLE
+	netrpc_shutdown();
+#endif
+	if (tftp)
+		tftp_remove(tftp);
+	printf("Releasing DHCP lease...\n");
+	dhcp_release(&eth);
+	dhcp_stop(&eth);
+	printf("Shutting down network...\n");
+	netif_remove(&eth);
+	gelicif_shutdown(&eth);
+
+	mm_shutdown();
+	printf("Relocating kernel...\n");
+	kload(recvd);
+	printf("Letting thread1 run loose...\n");
+	_thread1_vector = 0x100;
+	_thread1_release = 1;
+	printf("Taking the plunge...\n");
+	klaunch();
+	fatal("klaunch returned\n");
 }
 
 void start_net_ops(void)
@@ -155,6 +168,9 @@ void start_net_ops(void)
 	recv_buf = __zimage_load_base;
 
 	tftp_get(tftp, (char*)eth.dhcp->boot_file_name, recv_buf, 10*1024*1024, tftp_cb, NULL);
+#endif
+#ifdef NETRPC_ENABLE
+	netrpc_init();
 #endif
 }
 

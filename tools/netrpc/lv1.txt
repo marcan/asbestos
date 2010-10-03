@@ -1,0 +1,127 @@
+0	lv1_allocate_memory								4	2	size, page_bits, unk, flags, addr, muid
+1	lv1_write_htab_entry							4	0	vas_id, pteg, pte_v, pte_r
+2	lv1_construct_virtual_address_space				3	2	htab_bits, num_sizes, page_sizes, vas_id, act_htab_size
+3	lv1_invalidate_htab_entries						5	0	
+4	lv1_get_virtual_address_space_id_of_ppe			1	1	ppe_id, vas_id
+6	lv1_query_logical_partition_address_region_info	1	5	addr, start_addr, size, perms, page_size, flags
+7	lv1_select_virtual_address_space				1	0	vas_id
+9	lv1_pause										1	0	ign_dec
+10	lv1_destruct_virtual_address_space				1	0	vas_id
+11	lv1_configure_irq_state_bitmap					3	0	ppe_id, thread_id, bmp_addr
+12	lv1_connect_irq_plug_ext						5	0	ppe_id, thread_id, virq, outlet, unk
+13	lv1_release_memory								1	0	addr
+15	lv1_put_iopte									5	0	ioas_id, ioif_addr, addr, io_id, flags
+17	lv1_disconnect_irq_plug_ext						3	0	ppe_id, thread_id, virq
+18	lv1_construct_event_receive_port				0	1	outlet
+19	lv1_destruct_event_receive_port					1	0	outlet
+24	lv1_send_event_locally							1	0	outlet
+26	lv1_detect_pending_interrupts					1	4	
+27	lv1_end_of_interrupt							1	0	irq
+28	lv1_connect_irq_plug							2	0	virq, hwirq
+29	lv1_disconnect_irq_plug							1	0	virq
+30	lv1_end_of_interrupt_ext						3	0	ppe_id, thread_id, virq
+31	lv1_did_update_interrupt_mask					2	0	ppe_id, thread_id
+44	lv1_shutdown_logical_partition					1	0	cmd
+54	lv1_destruct_logical_spe						1	0	spe_id
+57	lv1_construct_logical_spe						7	6	pbits1, pbits2, pbits3, pbits4, pbits5, vas_id, type, priv2_addr, problem_addr, local_store_addr, unk, shadow_addr, spe_id
+61	lv1_set_spe_interrupt_mask						3	0	spe_id, class, mask
+64	lv1_set_spe_transition_notifier					3	0	
+65	lv1_disable_logical_spe							2	0	spe_id, unk
+66	lv1_clear_spe_interrupt_status					4	0	spe_id, class, stat, unk
+67	lv1_get_spe_interrupt_status					2	1	spe_id, class, stat
+69	lv1_get_logical_ppe_id							0	1	ppe_id
+73	lv1_set_interrupt_mask							5	0	
+74	lv1_get_logical_partition_id					0	1	lpar_id
+77	lv1_configure_execution_time_variable			1	0	
+78	lv1_get_spe_irq_outlet							2	1	spe_id, class, outlet
+79	lv1_set_spe_privilege_state_area_1_register		3	0	spe_id, offset, value
+90	lv1_create_repository_node						6	0	k1, k2, k3, k4, v1, v2
+91	lv1_get_repository_node_value					5	2	lpar_id, k1, k2, k3, k4, v1, v2
+92	lv1_modify_repository_node_value				6	0	k1, k2, k3, k4, v1, v2
+93	lv1_remove_repository_node						4	0	k1, k2, k3, k4
+95	lv1_read_htab_entries							2	5	
+96	lv1_set_dabr									2	0	dabr, states
+97	lv1_set_vmx_graphics_mode						1	0	mode
+98	lv1_set_thread_switch_control_register			1	0	tscr
+103	lv1_get_total_execution_time					2	1	
+116	lv1_allocate_io_segment							3	1	ioas_id, segment_size, page_bits, ioif_addr
+117	lv1_release_io_segment							2	0	ioas_id, ioif_addr
+118	lv1_allocate_ioid								1	1	
+119	lv1_release_ioid								2	0	
+120	lv1_construct_io_irq_outlet						1	1	irq, outlet
+121	lv1_destruct_io_irq_outlet						1	0	outlet
+122	lv1_map_htab									1	1	unk, htab_addr
+123	lv1_unmap_htab									1	0	htab_addr
+127	lv1_get_version_info							0	1	firmware_version
+140	lv1_construct_lpm								6	3	
+141	lv1_destruct_lpm								1	0	
+142	lv1_start_lpm									1	0	
+143	lv1_stop_lpm									1	1	
+144	lv1_copy_lpm_trace_buffer						3	1	
+145	lv1_add_lpm_event_bookmark						5	0	
+146	lv1_delete_lpm_event_bookmark					3	0	
+147	lv1_set_lpm_interrupt_mask						3	1	
+148	lv1_get_lpm_interrupt_status					1	1	
+149	lv1_set_lpm_general_control						5	2	
+150	lv1_set_lpm_interval							3	1	
+151	lv1_set_lpm_trigger_control						3	1	
+152	lv1_set_lpm_counter_control						4	1	
+153	lv1_set_lpm_group_control						3	1	
+154	lv1_set_lpm_debug_bus_control					3	1	
+155	lv1_set_lpm_counter								5	2	
+156	lv1_set_lpm_signal								7	0	
+157	lv1_set_lpm_spr_trigger							2	0	
+158	lv1_insert_htab_entry							6	3	htab_id, pteg, pte_v, pte_r, bolted, unk, inserted_idx, evicted_v, evicted_r
+162	lv1_read_virtual_uart							3	1	port_number, addr, bytes, bytes_read
+163	lv1_write_virtual_uart							3	1	port_number, addr, bytes, bytes_written
+164	lv1_set_virtual_uart_param						3	0	port_number, param_id, value
+165	lv1_get_virtual_uart_param						2	1	port_number, param_id, value
+166	lv1_configure_virtual_uart_irq					1	1	bmp_addr, outlet
+170	lv1_open_device									3	0	bus_id, dev_id, unk
+171	lv1_close_device								2	0	bus_id, dev_id
+172	lv1_map_device_mmio_region						5	1	bus_id, dev_id, bus_addr, size, page_bits, addr
+173	lv1_unmap_device_mmio_region					3	0	bus_id, dev_id, addr
+174	lv1_allocate_device_dma_region					5	1	bus_id, dev_id, size, page_bits, flags, bus_addr
+175	lv1_free_device_dma_region						3	0	bus_id, dev_id, bus_addr
+176	lv1_map_device_dma_region						6	0	bus_id, dev_id, addr, bus_addr, size, flags
+177	lv1_unmap_device_dma_region						4	0	bus_id, dev_id, bus_addr, size
+178	lv1_read_pci_config								6	1	bus_id, pci_bus_id, dev_id, func_id, offset, size, config_data
+179	lv1_write_pci_config							7	0	
+180	lv1_read_pci_io									4	1	
+181	lv1_write_pci_io								5	0	
+185	lv1_net_add_multicast_address					4	0	bus_id, dev_id, addr, flag
+186	lv1_net_remove_multicast_address				4	0	bus_id, dev_id, unk, unk
+187	lv1_net_start_tx_dma							4	0	bus_id, dev_id, bus_addr, unk
+188	lv1_net_stop_tx_dma								3	0	bus_id, dev_id, unk
+189	lv1_net_start_rx_dma							4	0	bus_id, dev_id, bus_addr, unk
+190	lv1_net_stop_rx_dma								3	0	bus_id, dev_id, unk
+191	lv1_net_set_interrupt_status_indicator			4	0	bus_id, dev_id, irq_status_addr, unk
+193	lv1_net_set_interrupt_mask						4	0	bus_id, dev_id, mask, unk
+194	lv1_net_control									6	2	bus_id, dev_id, cmd, arg1, arg2, arg3, v1, v2
+197	lv1_connect_interrupt_event_receive_port		4	0	bus_id, dev_id, outlet, interrupt_id
+198	lv1_disconnect_interrupt_event_receive_port		4	0	bus_id, dev_id, outlet, interrupt_id
+199	lv1_get_spe_all_interrupt_statuses				1	1	
+202	lv1_deconfigure_virtual_uart_irq				0	0	
+207	lv1_enable_logical_spe							2	0	spe_id, resource_id
+210	lv1_gpu_open									1	0	
+211	lv1_gpu_close									0	0	
+212	lv1_gpu_device_map								1	2	dev_id, addr, size
+213	lv1_gpu_device_unmap							1	0	dev_id
+214	lv1_gpu_memory_allocate							5	2	size, unk, unk, unk, unk, mem_handle, addr
+216	lv1_gpu_memory_free								1	0	mem_handle
+217	lv1_gpu_context_allocate						2	5	mem_handle, flags, ctx_handle, addr_dma_control, addr_driver_info, addr_reports, reports_size
+218	lv1_gpu_context_free							1	0	ctx_handle
+221	lv1_gpu_context_iomap							5	0	ctx_handle, bus_addr, addr, size, iopte_flags
+225	lv1_gpu_context_attribute						6	0	ctx_handle, opcode, p1, p2, p3, p4
+227	lv1_gpu_context_intr							1	1	ctx_handle, pending_irqs
+228	lv1_gpu_attribute								5	0	attrib, unk, unk, unk, unk
+232	lv1_get_rtc										0	2	rtc_val, tb_val
+240	lv1_set_ppe_periodic_tracer_frequency			1	0	
+241	lv1_start_ppe_periodic_tracer					5	0	
+242	lv1_stop_ppe_periodic_tracer					1	1	
+245	lv1_storage_read								6	1	dev_id, region_id, start_sector, sector_count, flags, addr, op_tag
+246	lv1_storage_write								6	1	dev_id, region_id, start_sector, sector_count, flags, addr, op_tag
+248	lv1_storage_send_device_command					6	1	dev_id, cmd_id, cmd_addr, cmd_size, data_buffer, blocks, op_tag
+249	lv1_storage_get_async_status					1	2	dev_id, op_tag, op_status
+254	lv1_storage_check_async_status					2	1	dev_id, op_tag, op_status
+255	lv1_panic										1	0	reboot
