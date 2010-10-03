@@ -10,6 +10,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "debug.h"
 #include "mm.h"
 #include "lv1call.h"
+#include "string.h"
 
 #define MSR_IR (1UL<<5)
 #define MSR_DR (1UL<<4)
@@ -19,8 +20,74 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 int seg_idx = 1;
 u64 vas_id;
 
+#define NUM_MMIO 64
+
+int mm_inited = 0;
+
+struct mmio_region {
+	u64 start;
+	u32 end;
+};
+
+struct mmio_region mmios[NUM_MMIO];
+
+int mm_addmmio(u64 start, u32 size)
+{
+	int i;
+	u64 end = start+size;
+
+	if (!size)
+		return -1;
+
+	if ((start & 0xfff) || (end & 0xfff)) {
+		printf("WARNING: MMIO region is not aligned (0x%016lx 0x%x)", start, size);
+		start &= ~0xfff;
+		start = (start+0xfff)&~0xfff;
+	}
+
+	if (!start)
+		return -1;
+
+	for (i=0; i<NUM_MMIO; i++) {
+		if (mmios[i].start == 0) {
+			mmios[i].start = start;
+			mmios[i].end = end;
+			return 0;
+		}
+	}
+	printf("WARNING: Maximum number of MMIO regions exceeded\n");
+	return -1;
+}
+
+int mm_delmmio(u64 start)
+{
+	int i;
+	start &= ~0xfff;
+	for (i=0; i<NUM_MMIO; i++) {
+		if (mmios[i].start == start) {
+			mmios[i].start = 0;
+			mmios[i].end = 0;
+			return 0;
+		}
+	}
+	printf("WARNING: Tried to delete nonexistent MMIO region 0x%016lx\n", start);
+	return -1;
+}
+
+int mm_ismmio(u64 addr)
+{
+	int i;
+	for (i=0; i<NUM_MMIO; i++) {
+		if (mmios[i].start <= addr && mmios[i].end > addr)
+			return 1;
+	}
+	return 0;
+}
+
 int mm_loadseg(u64 addr)
 {
+	if (!mm_inited)
+		return 0;
 	u64 esid = addr >> 28;
 
 	int index = 0;
@@ -44,6 +111,8 @@ int mm_loadseg(u64 addr)
 
 int mm_loadhtab(u64 addr)
 {
+	if (!mm_inited)
+		return 0;
 	s64 result;
 
 	//printf("Load HTAB for %016lx\n", addr);
@@ -51,6 +120,9 @@ int mm_loadhtab(u64 addr)
 	addr &= ~0xfff;
 
 	u32 wimg = 0x2;
+	if (mm_ismmio(addr)) {
+		wimg = 0x5;
+	}
 
 	u64 hpte_v;
 	u64 hpte_r;
@@ -71,7 +143,7 @@ int mm_loadhtab(u64 addr)
 				       &inserted_index,
 				       &evicted_v, &evicted_r);
 	if (result) {
-		printf("Failed to insert HTAB entry:\n", result);
+		printf("Failed to insert HTAB entry:\n");
 		printf("hpte_group=0x%lx hpte_v=0x%016lx hpte_r=0x%016lx\n", hpte_group, hpte_v, hpte_r);
 		printf("result=%ld inserted_index=%lx evicted_v=%lx evicted_r=%lx\n", result, inserted_index, evicted_v, evicted_r);
 		return 0;
@@ -86,6 +158,7 @@ void mm_init(void)
 
 	printf("Initializing memory management...\n");
 
+	memset(mmios, 0, sizeof(mmios));
 	u64 act_htab_size;
 	result = lv1_construct_virtual_address_space(18, 0, 0, &vas_id, &act_htab_size);
 	if (result)
@@ -98,6 +171,8 @@ void mm_init(void)
 
 	asm("slbia");
 	mm_loadseg(0);
+
+	mm_inited = 1;
 
 	u64 msr;
 	asm("mfmsr %0" : "=r"(msr));
@@ -129,6 +204,8 @@ void mm_shutdown(void)
 
 	printf("Destroyed VAS %ld\n", vas_id);
 	vas_id = 0;
+
+	mm_inited = 0;
 }
 
 void sync_before_exec(void *addr, int len)
