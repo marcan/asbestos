@@ -207,6 +207,16 @@ void lv2_cleanup(void)
 
 	printf("Disconnected %d IRQ plugs\n", count);
 
+	for (i=0, count=0; i<256; i++)
+		if (lv1_destruct_io_irq_outlet(i) == 0)
+			count++;
+	printf("Destructed %d IRQ outlets\n", count);
+
+	count = 0;
+	if (lv1_configure_irq_state_bitmap(ppe_id, 0, 0) == 0) count++;
+	if (lv1_configure_irq_state_bitmap(ppe_id, 1, 0) == 0) count++;
+	printf("Removed %d state bitmaps\n", count);
+
 	printf("Closed %d devices\n", close_all_devs());
 
 	for (i=0; i<256; i++) {
