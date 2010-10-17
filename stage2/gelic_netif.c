@@ -189,7 +189,7 @@ low_level_init(struct netif *netif)
 	netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
 
 	/* clear any existing RX DMA */
-	result = lv1_net_stop_rx_dma(gelicif->bus_id, gelicif->dev_id, 0);
+	result = lv1_net_stop_rx_dma(gelicif->bus_id, gelicif->dev_id);
 	if (result == 0)
 		printf("gelicif: cleared old RX DMA job\n");
 
@@ -207,7 +207,7 @@ static void low_level_shutdown(struct netif *netif)
 
 	printf("gelicif: low_level_shutdown()\n");
 
-	result = lv1_net_stop_rx_dma(gelicif->bus_id, gelicif->dev_id, 0);
+	result = lv1_net_stop_rx_dma(gelicif->bus_id, gelicif->dev_id);
 	if (result) {
 		printf("gelicif: WARNING: failed to stop RX DMA, will not free buffer\n");
 	} else {
