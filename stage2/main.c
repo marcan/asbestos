@@ -136,8 +136,9 @@ void shutdown_and_launch(size_t recvd)
 	_thread1_vector = 0x100;
 	_thread1_release = 1;
 	printf("Taking the plunge...\n");
+	debug_shutdown();
 	klaunch();
-	fatal("klaunch returned\n");
+	lv1_panic(0);
 }
 
 void start_net_ops(void)

@@ -144,6 +144,15 @@ void debug_init(void)
 	debug_initialized = 1;
 }
 
+void debug_shutdown(void)
+{
+	debug_initialized = 0;
+	if (unmap_dma_mem(bus_id, dev_id, bus_addr, sizeof(dbg)))
+		lv1_panic(0);
+	if (lv1_close_device(bus_id, dev_id))
+		lv1_panic(0);
+}
+
 int printf(const char *fmt, ...)
 {
 	va_list ap;
