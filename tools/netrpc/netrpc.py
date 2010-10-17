@@ -285,6 +285,8 @@ class LV1Client(RPCClient):
 		lpar, k1, k2, k3, k4 = self.parse_repo_path(path)
 		return self.lv1_get_repository_node_value(lpar, k1, k2, k3, k4)
 
+	def get_area_size(self, addr):
+		return self.lv1_query_logical_partition_address_region_info(addr)[1]
 
 if __name__ == "__main__":
 	print "Connecting to PS3..."
