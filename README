@@ -1,0 +1,167 @@
+================================================================================
+                               AsbestOS README
+================================================================================
+
+== Introduction ==
+
+AsbestOS is a Linux bootloader that runs off of the PS3 Lv-2 USB exploit. It is
+designed to boot on PS3 systems running System Software version 2.41, though it
+could be adapted to earlier versions. Linux runs on the GameOS partition, thus
+having the same access to hardware that GameOS has.
+
+== Building ==
+
+The PS3DEV environment variable needs to point to a usable PowerPC64 toolchain
+(e.g. $PS3DEV/bin/powerpc64-linux-gcc). If you don't have one, point it at an
+empty dir and run
+
+$ cd toolchain && ./buildit.sh ppu
+
+To compile stage1 or stage2, just type 'make' in the respective directories.
+You can also compile the UDP debug message client by doing the same in the tools
+directory. 'make' in the root of the source tree will do all three.
+
+== Usage ==
+
+First compile AsbestOS and get a compatible USB exploit delivery mechanism. You
+should also connect your PS3 and PC to a network (they need to be in the same
+broadcast domain) and make sure your PC allows broadcast packets to UDP port
+18194. The IP source and destination are both 255.255.255.255 for these packets.
+
+Run tools/dbgcli to get AsbestOS debug output. Fire off the exploit device, turn
+on your PS3 using power followed by eject within 0.2 seconds (if required by
+your exploit implementation), and cross your fingers. If you get anything at
+all, congratulations, stage2 is running. At this point, if you have any issues,
+the problem should be fairly apparent from the messages.
+
+If you get nothing, either the packets aren't making it to your PC or stage2 is
+failing to start up properly. If your exploit device can show the debug "print"
+USB messages, that might help you find out whether stage2 is at least being
+loaded properly.
+
+If your PS3 panics (blinking red light) or spontaneously reboots, then something
+somewhere probably hit an error condition. The first thing that stage2 does is
+inititalize Ethernet debugging, so chances are either that failed, or stage1
+failed.
+
+Basically, if stuff doesn't work, poke me on IRC ('marcan' on either EFNet or
+freenode) and we'll see what we can do.
+
+To get a kernel to load (see below for instructions to build one), you need to
+have a DHCP server on your network. It needs to be configured to feed a boot
+server and filename to the PS3. The boot server should point to a machine
+running a TFTP server that can serve the specified file, which should be the
+kernel image. For example, on an OpenWRT Kamikaze router, put something like
+this on your /etc/config/dhcp:
+
+config host
+        option name       ps3
+        option mac        00:1f:a7:aa:bb:cc
+        option ip         192.168.3.60
+        option networkid  ps3
+
+config boot
+        option networkid        ps3
+        option filename         dtbImage.ps3.bin
+        option servername       foobar
+        option serveraddress    192.168.3.171
+
+Where 192.168.3.60 is the IP that you want your PS3 to get and 192.168.3.171 is
+the IP of the TFTP server. The server name doesn't really matter, but it's a
+good idea to set it to the hostname of the TFTP server. Don't forget to specify
+the MAC address of your PS3 correctly.
+
+== Compatible devices ==
+
+AsbestOS can potentially run on any device capable of implementing the exploit
+and which has access to at least 40kB or so (currently) of free internal or
+external memory. The following ports are known to exist so far:
+
+- AVR Software USB (for AVRs without hardware USB)
+  Arduinos, etc...
+  http://github.com/rvalles/asbestos-avr8susb
+  Supports both >=64k AVRs and <64k AVRs with an external I2C EEPROM.
+
+- Rockbox devices with the ARC USB controller
+  iPods (non-Touch), ...
+  http://github.com/shuffle2/rockbox_psgroove/wiki
+  Supports AsbestOS with a minor patch to stage1 (because shuffle2 is lazy :P)
+
+Yeah, someone should really make a port for USB AVRs (heck, I bet someone
+already has and just didn't tell me).
+
+== Kernel ==
+
+Standard ps3-linux.git kernels should work. However, you should reduce the
+allocation size for the framebuffer to 2MB or so (and use a small modde, like
+480p).
+
+If you want early debugging via dbgcli from the kernel, check out the patches
+at: http://git.marcansoft.com/?p=ps3-linux.git . There's also a useful .config
+there.
+
+To build the kernel, use 'make dtbImage.ps3'. The binary that you need to use
+in your TFTP server is at arch/powerpc/boot/dtbImage.ps3.bin
+
+To specify commandline arguments, edit arch/powerpc/boot/dts/ps3.dts like this:
+
+	chosen {
+		bootargs = "your boot arguments here";
+	};
+
+For example, I use the following:
+
+ udbg-immortal video=ps3fb:mode:2 root=/dev/nfs rw
+ nfsroot=192.168.3.171:/home/marcansoft/sony/ps3/nfsroot ip=dhcp init=/linuxrc
+
+Yes, this is ugly and will change once AsbestOS gains devicetree support.
+
+== Linux environment ==
+
+The GameOS environment is essentially the same as the OtherOS environment, as
+they are just different LPAR configurations on the same hypervisor. The
+following differences are known to exist:
+
+- Boot memory is 16MB instead of 128MB. This restricts the size of the Linux
+  kernel (and any initrd) and causes issues with the allocation for the shadow
+  framebuffer. For now, you need to reduce the framebuffer allocation size. This
+  will be fixed in the future. One possibility to bypass this is to make
+  AsbestOS responsible for allocating the rest of RAM, and make Linux use it as
+  soon as possible (currently, the remaining RAM is added halfway through kernel
+  startup). Also, as a consequence of the 16MB initial size of RAM, the kernel
+  uses a silly value for the maximum number of threads. Use a wrapper script
+  around /sbin/init and poke /proc/sys/kernel/threads-max to work around the
+  issue. You might also need to run 'ulimit -u unlimited'.
+
+- 3D support is obviously available, but its use is unknown. For all we know 3D
+  support might actually exist in OtherOS mode too, but it definitely must exist
+  under GameOS for obvious reasons.
+
+- Flash and HDD access limitations are different. Currently, Linux seems unable
+  to access these devices out of the box. Investigation needed.
+
+- Linux gets access to an additional SPE, so you get 7 instead of 6.
+
+== TODO ==
+
+Implement devicetrees so we can switch to a zImage instead of the dtbImage.ps3
+nonsense.
+
+Support some kind of video output, maybe.
+
+Support USB in AsbestOS to load kernels from USB devices
+
+Support the PS3 HDD to load kernels from the OtherOS partition, if any (maybe?)
+
+== Known bugs ==
+
+USB EHCI support is buggy, at least on recent PS3 Fat systems. This is
+apparently also a problem in OtherOS mode on older firmwares and unrelated to
+AsbestOS per se.
+
+The PS3 video modesetting driver times out on some command, which delays video
+init for a few seconds. If your kernel panics before that, you will never see
+anything.
+
+Storage support (Flash and HDD) needs looking into.
+
