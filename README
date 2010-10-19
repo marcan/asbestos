@@ -5,7 +5,7 @@
 == Introduction ==
 
 AsbestOS is a Linux bootloader that runs off of the PS3 Lv-2 USB exploit. It is
-designed to boot on PS3 systems running System Software version 2.41, though it
+designed to boot on PS3 systems running System Software version 3.41, though it
 could be adapted to earlier versions. Linux runs on the GameOS partition, thus
 having the same access to hardware that GameOS has.
 
