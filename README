@@ -87,6 +87,10 @@ external memory. The following ports are known to exist so far:
   http://github.com/shuffle2/rockbox_psgroove/wiki
   Supports AsbestOS with a minor patch to stage1 (because shuffle2 is lazy :P)
 
+- TI-84 Plus
+  http://brandonw.net/ps3jb/
+  Supports AsbestOS stage1/2
+
 Yeah, someone should really make a port for USB AVRs (heck, I bet someone
 already has and just didn't tell me).
 
