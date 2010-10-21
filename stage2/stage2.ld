@@ -37,7 +37,7 @@ SECTIONS {
 		*(.text.*)
 	}
 
-	. = ALIGN(32);
+	. = ALIGN(64);
 	.opd : {
 		*(.opd)
 	} :rodata = 0
@@ -52,7 +52,7 @@ SECTIONS {
 		*(.rodata.*)
 	}
 
-	. = ALIGN(32);
+	. = ALIGN(64);
 	.data : {
 		*(.data)
 		*(.data.*)
@@ -71,7 +71,7 @@ SECTIONS {
 	} :bss = 0
 	__bss_end = .;
 
-	. = ALIGN(32);
+	. = ALIGN(64);
 
 	.stack : {
 		_stack_top = .;
