@@ -3,3 +3,4 @@
 *.bin
 .deps
 *.lzo
+devtree.S

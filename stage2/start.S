@@ -69,6 +69,7 @@ _thread1_start:
 	beq 1b
 	ld r4, 16(r3)
 	mtctr r4
+	li r3, 1 /* CPU number for Linux */
 	bctr
 
 	.align 3

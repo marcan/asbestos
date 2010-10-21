@@ -7,6 +7,8 @@
 
 include ../common/ppu.mak
 
+DTC=$(PS3DEV)/bin/dtc
+
 STUB_LDFLAGS := $(LDFLAGS) -Wl,--gc-sections -Wl,-T,uncompress/stub.ld
 LDFLAGS += -Wl,--gc-sections -Wl,-T,stage2.ld
 STUB_CFLAGS := $(CFLAGS) -Os -Wall -ffunction-sections -I. -Iuncompress/
@@ -30,8 +32,8 @@ FDT_OBJS = $(addprefix libfdt/,\
 	fdt.o fdt_ro.o fdt_rw.o fdt_strerror.o fdt_sw.o fdt_wip.o)
 
 OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o malloc.o \
-	time.o tftp.o klaunch.o gelic_netif.o exceptions.o exc_vector.o mm.o \
-	netrpc.o cleanup.o $(LWIP_OBJS) $(FDT_OBJS)
+	time.o tftp.o gelic_netif.o exceptions.o exc_vector.o mm.o netrpc.o \
+	cleanup.o devtree.o kernel.o $(LWIP_OBJS) $(FDT_OBJS)
 
 STUB_OBJS = uncompress/stub_start.o uncompress/stub_main.o uncompress/minilzo.o
 
@@ -57,6 +59,10 @@ uncompress/stub.elf: $(STUB_OBJS) uncompress/stub.ld
 stage2_raw.elf: $(OBJS) stage2.ld
 	@echo "  LINK      $@"
 	@$(PREFIX)gcc $(LDFLAGS) -o $@ $(OBJS)
+
+%.S: %.dts
+	@echo "  DTC       $<"
+	@$(DTC) -o $@ -O asm $<
 
 %.o: %.S
 	@echo "  ASSEMBLE  $<"

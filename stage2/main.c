@@ -12,12 +12,12 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "debug.h"
 #include "malloc.h"
 #include "time.h"
-#include "klaunch.h"
 #include "device.h"
 #include "exceptions.h"
 #include "mm.h"
 #include "netrpc.h"
 #include "cleanup.h"
+#include "kernel.h"
 
 #include "lwip/init.h"
 #include "lwip/dhcp.h"
@@ -29,8 +29,6 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "netif/etharp.h"
 
 extern volatile u64 _thread1_active;
-extern volatile u64 _thread1_release;
-extern volatile u64 _thread1_vector;
 
 static struct netif eth;
 static struct ip_addr ipaddr, netmask, gw;
@@ -96,8 +94,8 @@ void net_loop(void) {
 
 #define P_IP(w) (u8)((w)>>24), (u8)((w)>>16), (u8)((w)>>8), (u8)(w)
 
-extern u8 __zimage_load_base[];
 u8 *recv_buf;
+size_t recv_buf_size;
 
 struct tftp_client *tftp = NULL;
 
@@ -108,6 +106,12 @@ void tftp_cb(void *arg, struct tftp_client *clt, enum tftp_status status, size_t
 	printf("Transfer complete, status %d. Image size: %ld bytes\n", status, recvd);
 
 	if (status == TFTP_STATUS_OK) {
+		mm_highmem_reserve(recvd);
+		if (kernel_load(recv_buf, recvd) != 0) {
+			printf("Failed to load kernel\n");
+			printf("Rebooting...\n");
+			lv1_panic(1);
+		}
 		shutdown_and_launch(recvd);
 	} else {
 		printf("Transfer did not complete successfully\n");
@@ -115,6 +119,8 @@ void tftp_cb(void *arg, struct tftp_client *clt, enum tftp_status status, size_t
 		lv1_panic(1);
 	}
 }
+
+void devtree_prepare(void);
 
 void shutdown_and_launch(size_t recvd)
 {
@@ -131,15 +137,7 @@ void shutdown_and_launch(size_t recvd)
 	gelicif_shutdown(&eth);
 
 	mm_shutdown();
-	printf("Relocating kernel...\n");
-	kload(recvd);
-	printf("Letting thread1 run loose...\n");
-	_thread1_vector = 0x100;
-	_thread1_release = 1;
-	printf("Taking the plunge...\n");
-	debug_shutdown();
-	klaunch();
-	lv1_panic(0);
+	kernel_launch();
 }
 
 void start_net_ops(void)
@@ -166,10 +164,10 @@ void start_net_ops(void)
 
 	tftp_connect(tftp, &eth.dhcp->offered_si_addr, 69);
 
-	// memmove it later
-	recv_buf = __zimage_load_base;
+	recv_buf = mm_highmem_freestart();
+	recv_buf_size = mm_highmem_freesize();
 
-	tftp_get(tftp, (char*)eth.dhcp->boot_file_name, recv_buf, 10*1024*1024, tftp_cb, NULL);
+	tftp_get(tftp, (char*)eth.dhcp->boot_file_name, recv_buf, recv_buf_size, tftp_cb, NULL);
 #endif
 #ifdef NETRPC_ENABLE
 	netrpc_init();
