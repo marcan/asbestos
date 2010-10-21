@@ -2,9 +2,10 @@
 
 Copyright (C) 2008		Segher Boessenkool <segher@kernel.crashing.org>
 Copyright (C) 2009		Haxx Enterprises <bushing@gmail.com>
+Copyright (C) 2010		Hector Martin "marcan" <hector@marcansoft.com>
 
 Portions taken from the Public Domain C Library (PDCLib).
-https://negix.net/trac/pdclib
+http://pdclib.rootdirectory.de/
 
 This code is licensed to you under the terms of the GNU GPL, version 2;
 see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
@@ -168,3 +169,29 @@ size_t strcspn(const char *s1, const char *s2)
 	return len;
 }
 
+void *memmove(void *s1, const void *s2, size_t n)
+{
+	char *p1 = s1;
+	const char *p2 = s2;
+	if (p2 < p1 && p1 < p2 + n) {
+		p2 += n;
+		p1 += n;
+		while (n-- != 0)
+			*--p1 = *--p2;
+	} else
+		while (n-- != 0)
+			*p1++ = *p2++;
+	return s1;
+}
+
+void *memchr(const void *s, int c, size_t n)
+{
+	const unsigned char *src = s;
+	unsigned char uc = c;
+	while (n-- != 0) {
+		if (*src == uc)
+			return (void *) src;
+		src++;
+	}
+	return NULL;
+}

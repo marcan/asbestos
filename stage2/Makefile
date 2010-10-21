@@ -11,7 +11,7 @@ STUB_LDFLAGS := $(LDFLAGS) -Wl,--gc-sections -Wl,-T,uncompress/stub.ld
 LDFLAGS += -Wl,--gc-sections -Wl,-T,stage2.ld
 STUB_CFLAGS := $(CFLAGS) -Os -Wall -ffunction-sections -I. -Iuncompress/
 CFLAGS += -Os -Wall -I. -ffunction-sections -fdata-sections \
-	-Ilwip/src/include -Ilwip/src/include/ipv4 -Ilwip/arch/include
+	-Ilwip/src/include -Ilwip/src/include/ipv4 -Ilwip/arch/include -Ilibfdt
 ASFLAGS = -D__ASSEMBLY__ -I.
 
 DEPDIR = .deps
@@ -26,9 +26,12 @@ LWIP_OBJS = \
 		tcpip.o err.o netifapi.o api_lib.o api_msg.o sockets.o) \
 	lwip/src/netif/etharp.o
 
+FDT_OBJS = $(addprefix libfdt/,\
+	fdt.o fdt_ro.o fdt_rw.o fdt_strerror.o fdt_sw.o fdt_wip.o)
+
 OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o malloc.o \
 	time.o tftp.o klaunch.o gelic_netif.o exceptions.o exc_vector.o mm.o \
-	netrpc.o cleanup.o $(LWIP_OBJS)
+	netrpc.o cleanup.o $(LWIP_OBJS) $(FDT_OBJS)
 
 STUB_OBJS = uncompress/stub_start.o uncompress/stub_main.o uncompress/minilzo.o
 

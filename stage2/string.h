@@ -2,6 +2,7 @@
 
 Copyright (C) 2008		Segher Boessenkool <segher@kernel.crashing.org>
 Copyright (C) 2009		Haxx Enterprises <bushing@gmail.com>
+Copyright (C) 2010		Hector Martin "marcan" <hector@marcansoft.com>
 
 This code is licensed to you under the terms of the GNU GPL, version 2;
 see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
@@ -16,7 +17,9 @@ size_t strlen(const char *);
 size_t strnlen(const char *, size_t);
 void *memset(void *, int, size_t);
 void *memcpy(void *, const void *, size_t);
+void *memmove(void *, const void *, size_t);
 int memcmp(const void *, const void *, size_t);
+void *memchr(const void *s, int c, size_t n);
 int strcmp(const char *, const char *);
 int strncmp(const char *, const char *, size_t);
 size_t strlcpy(char *, const char *, size_t);
