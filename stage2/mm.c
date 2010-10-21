@@ -11,6 +11,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "mm.h"
 #include "lv1call.h"
 #include "string.h"
+#include "repo.h"
 
 #define MSR_IR (1UL<<5)
 #define MSR_DR (1UL<<4)
@@ -23,6 +24,19 @@ u64 vas_id;
 #define NUM_MMIO 128
 
 int mm_inited = 0;
+
+// highmem size is aligned to 16MB blocks
+#define HIGHMEM_PBITS 24
+#define HIGHMEM_PALIGN (1<<HIGHMEM_PBITS)
+
+// highmem pointer is aligned to 64kB
+#define HIGHMEM_ALIGN 65536
+
+u64 mm_bootmem_size;
+u64 mm_highmem_addr;
+u64 mm_highmem_size;
+
+static u64 highmem_ptr;
 
 struct mmio_region {
 	u64 start;
@@ -186,6 +200,57 @@ void mm_init(void)
 	asm("isync ; mtmsrd %0,0 ; isync" :: "r"(msr));
 
 	printf("MMU initialized, now running in virtual mode\n");
+
+	u64 ppe_id, lpar_id;
+
+	result = lv1_get_logical_ppe_id(&ppe_id);
+	if (result)
+		fatal("could not get PPE ID");
+
+	result = lv1_get_logical_partition_id(&lpar_id);
+	if (result)
+		fatal("could not get LPAR ID");
+
+	u64 rm_size, rgntotal, v2;
+	
+	result = lv1_get_repository_node_value(lpar_id, FIELD_FIRST("bi",0),
+					FIELD("pu",0), ppe_id, FIELD("rm_size",0),
+					&rm_size, &v2);
+	if (result)
+		fatal("could not get bootmem size");
+
+	result = lv1_get_repository_node_value(lpar_id, FIELD_FIRST("bi",0),
+					FIELD("rgntotal",0), 0, 0, &rgntotal, &v2);
+	if (result)
+		fatal("could not get total region size");
+
+	printf("Region size = %ld bytes (%ldMB)\n", rgntotal, rgntotal>>20);
+	printf("Bootmem = %ld bytes (%ldMB)\n", rm_size, rm_size>>20);
+
+	mm_bootmem_size = rm_size;
+	
+	u64 exp_size = rgntotal - rm_size;
+	exp_size &= ~(HIGHMEM_PALIGN-1);
+
+	while (exp_size) {
+		u64 muid, addr;
+		result = lv1_allocate_memory(exp_size, HIGHMEM_PBITS, 0, 0, &addr, &muid);
+		if (result == 0) {
+			mm_highmem_addr = addr;
+			mm_highmem_size = exp_size;
+			break;
+		} else {
+			printf("Allocation of %ld bytes failed (%d), trying again...\n", exp_size, result);
+			exp_size -= HIGHMEM_PALIGN;
+		}
+	}
+
+	if (!exp_size)
+		fatal("could not allocate highmem");
+
+	highmem_ptr = mm_highmem_addr;
+
+	printf("Highmem = %ld bytes (%ldMB)\n", mm_highmem_size, mm_highmem_size>>20);
 }
 
 void mm_shutdown(void)
@@ -212,6 +277,25 @@ void mm_shutdown(void)
 	vas_id = 0;
 
 	mm_inited = 0;
+}
+
+void mm_highmem_reserve(size_t size)
+{
+	if (size > mm_highmem_freesize())
+		fatal("mm_highmem_reserve: too large");
+
+	highmem_ptr += size + HIGHMEM_ALIGN - 1;
+	highmem_ptr &= ~(HIGHMEM_ALIGN-1);
+}
+
+void *mm_highmem_freestart(void)
+{
+	return (void*)highmem_ptr;
+}
+
+size_t mm_highmem_freesize(void)
+{
+	return mm_highmem_addr + mm_highmem_size - highmem_ptr;
 }
 
 void sync_before_exec(void *addr, int len)
