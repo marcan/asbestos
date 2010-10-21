@@ -10,7 +10,7 @@ include ../common/ppu.mak
 STUB_LDFLAGS := $(LDFLAGS) -Wl,--gc-sections -Wl,-T,uncompress/stub.ld
 LDFLAGS += -Wl,--gc-sections -Wl,-T,stage2.ld
 STUB_CFLAGS := $(CFLAGS) -Os -Wall -ffunction-sections -I. -Iuncompress/
-CFLAGS += -Os -Wall -I. -ffunction-sections \
+CFLAGS += -Os -Wall -I. -ffunction-sections -fdata-sections \
 	-Ilwip/src/include -Ilwip/src/include/ipv4 -Ilwip/arch/include
 ASFLAGS = -D__ASSEMBLY__ -I.
 
