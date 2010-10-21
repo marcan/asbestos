@@ -28,7 +28,7 @@ LWIP_OBJS = \
 
 OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o malloc.o \
 	time.o tftp.o klaunch.o gelic_netif.o exceptions.o exc_vector.o mm.o \
-	netrpc.o $(LWIP_OBJS)
+	netrpc.o cleanup.o $(LWIP_OBJS)
 
 STUB_OBJS = uncompress/stub_start.o uncompress/stub_main.o uncompress/minilzo.o
 
