@@ -10,6 +10,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "lv1call.h"
 #include "device.h"
 #include "debug.h"
+#include "repo.h"
 
 int map_dma_mem(int bus_id, int dev_id, void *start, size_t len, u64 *r_bus_addr)
 {
@@ -51,22 +52,6 @@ int unmap_dma_mem(int bus_id, int dev_id, u64 bus_addr, size_t len)
 
 	return lv1_free_device_dma_region(bus_id, dev_id, real_bus_addr);
 }
-
-#define _PS(s) (s "\0\0\0\0\0\0\0\0")
-#define S2I(s) ( \
-	(((u64)_PS(s)[0])<<56) | \
-	(((u64)_PS(s)[1])<<48) | \
-	(((u64)_PS(s)[2])<<40) | \
-	(((u64)_PS(s)[3])<<32) | \
-	(((u64)_PS(s)[4])<<24) | \
-	(((u64)_PS(s)[5])<<16) | \
-	(((u64)_PS(s)[6])<<8) | \
-	(((u64)_PS(s)[7])<<0))
-
-#define PS3_LPAR_ID_PME 1
-
-#define FIELD_FIRST(s, i) ((S2I(s)>>32) + (i))
-#define FIELD(s, i) (S2I(s) + (i))
 
 int find_device_by_type(int type, int index, int *pbus_id, int *pdev_id, int *pirq)
 {
