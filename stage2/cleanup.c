@@ -22,9 +22,6 @@ void lv2_cleanup(void)
 	if (lv1_gpu_close() == 0)
 		printf("GPU closed\n");
 
-	if (lv1_deconfigure_virtual_uart_irq() == 0)
-		printf("Deconfigured VUART IRQ\n");
-
 	u64 ppe_id;
 	result = lv1_get_logical_ppe_id(&ppe_id);
 	if (result)
@@ -140,4 +137,14 @@ void lv2_cleanup(void)
 	for (i=0; i<16; i++)
 	if (lv1_destruct_virtual_address_space(i) == 0)
 		printf("Destroyed VAS %d\n", i);
+
+	if (lv1_deconfigure_virtual_uart_irq() == 0)
+		printf("Deconfigured VUART IRQ\n");
+
+	for (i=0; i<64; i++) {
+		result = lv1_set_virtual_uart_param(i, 2, 0);
+		if (result == 0)
+			printf("Cleared IRQ mask for VUART %d\n", i);
+	}
+
 }
