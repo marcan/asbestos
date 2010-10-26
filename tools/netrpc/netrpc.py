@@ -23,6 +23,15 @@ def chexdump(s,st=0):
 	for i in range(0,len(s),16):
 		print "%08x  %s  %s  |%s|"%(i+st,pad(hexdump(s[i:i+8],' ')," ",23),pad(hexdump(s[i+8:i+16],' ')," ",23),pad(ascii(s[i:i+16])," ",16))
 
+CBE_IOPTE_PP_W = 0x8000000000000000
+CBE_IOPTE_PP_R = 0x4000000000000000
+CBE_IOPTE_M = 0x2000000000000000
+CBE_IOPTE_SO_R = 0x1000000000000000
+CBE_IOPTE_SO_RW = 0x1800000000000000
+CBE_IOPTE_RPN_Mask = 0x07fffffffffff000
+CBE_IOPTE_H = 0x0000000000000800
+CBE_IOPTE_IOID_Mask = 0x00000000000007ff
+
 LV1_SUCCESS                     = 0,
 LV1_RESOURCE_SHORTAGE           = -2
 LV1_NO_PRIVILEGE                = -3
@@ -102,6 +111,7 @@ class RPCClient(object):
 	RPC_ADDMMIO = 4
 	RPC_DELMMIO = 5
 	RPC_CLRMMIO = 6
+	RPC_MEMSET = 7
 	def __init__(self, host, port=1337):
 		self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.s.connect((host, port))
@@ -113,19 +123,21 @@ class RPCClient(object):
 		self.tag += 1
 		hdr = struct.pack(">II", cmd, tag)
 		self.s.send(hdr + data)
-		r = self.s.recv(1500)
-		if len(r) < 16:
-			raise RPCProtocolError("Received small packet (%d bytes)"%len(r))
-		rcmd, rtag, retcode = struct.unpack(">IIq", r[:16])
-		data = r[16:]
-		if rcmd != cmd:
-			raise RPCProtocolError("Received bad command (expected %d, got %d)"%(cmd,rcmd))
-		if rtag != tag:
-			raise RPCProtocolError("Received bad tag (expected %d, got %d)"%(tag,rtag))
-		if len(data) != 0:
-			return retcode, data
-		else:
-			return retcode
+		while True:
+			r = self.s.recv(1500)
+			if len(r) < 16:
+				raise RPCProtocolError("Received small packet (%d bytes)"%len(r))
+			rcmd, rtag, retcode = struct.unpack(">IIq", r[:16])
+			data = r[16:]
+			if rcmd != cmd:
+				raise RPCProtocolError("Received bad command (expected %d, got %d)"%(cmd,rcmd))
+			if rtag != tag:
+				print "RPC: Received bad tag (expected %d, got %d)"%(tag,rtag)
+				continue
+			if len(data) != 0:
+				return retcode, data
+			else:
+				return retcode
 
 	def chkret(self, ret):
 		if ret != 0:
@@ -147,8 +159,8 @@ class RPCClient(object):
 	def writememblk(self, addr, data):
 		if len(data) == 0:
 			return
-		args = struct.pack(">QI", addr, len(data))
-		ret, data = self.rpc(self.RPC_READMEM, args)
+		args = struct.pack(">QI", addr, len(data)) + data
+		ret = self.rpc(self.RPC_WRITEMEM, args)
 		self.chkret(ret)
 
 	def readmem(self, addr, length):
@@ -166,8 +178,8 @@ class RPCClient(object):
 		while len(data) != 0:
 			blk = data[:1024]
 			data = data[1024:]
-			self.readmemblk(addr, blk)
-			addr += blk
+			self.writememblk(addr, blk)
+			addr += len(blk)
 
 	def read8(self, addr):
 		return struct.unpack(">B", self.readmem(addr, 1))[0]
@@ -186,6 +198,32 @@ class RPCClient(object):
 		self.writemem(addr, struct.pack(">I", data))
 	def write64(self, addr, data):
 		self.writemem(addr, struct.pack(">Q", data))
+
+	def memset(self, addr, val, length):
+		if length == 0:
+			return
+		args = struct.pack(">QIQ", addr, length, val)
+		ret = self.rpc(self.RPC_MEMSET, args)
+		self.chkret(ret)
+
+	def memset8(self, addr, val, length):
+		val &= 0xff
+		self.memset(addr, val*0x0101010101010101, length)
+	def memset16(self, addr, val, length):
+		val &= 0xffff
+		if (addr|length)&1:
+			raise RPCError("Unaligned arguments")
+		self.memset(addr, val*0x0001000100010001, length)
+	def memset32(self, addr, val, length):
+		val &= 0xffffffff
+		if (addr|length)&3:
+			raise RPCError("Unaligned arguments")
+		self.memset(addr, val|(val<<32), length)
+	def memset64(self, addr, val, length):
+		val &= 0xffffffffffffffff
+		if (addr|length)&7:
+			raise RPCError("Unaligned arguments")
+		self.memset(addr, val, length)
 
 	def lv1ret(self, ret):
 		if ret != 0:
@@ -223,6 +261,20 @@ class RPCClient(object):
 	def clr_mmio(self):
 		ret = self.rpc(self.RPC_CLRMMIO)
 		self.chkret(ret)
+
+L1GPU_CONTEXT_ATTRIBUTE_DISPLAY_SYNC = 0x101
+L1GPU_CONTEXT_ATTRIBUTE_DISPLAY_FLIP = 0x102
+
+L1GPU_CONTEXT_ATTRIBUTE_FIFO_INIT = 0x001
+L1GPU_CONTEXT_ATTRIBUTE_FB_SETUP = 0x600
+L1GPU_CONTEXT_ATTRIBUTE_FB_BLIT = 0x601
+L1GPU_CONTEXT_ATTRIBUTE_FB_BLIT_SYNC = 0x602
+L1GPU_CONTEXT_ATTRIBUTE_FB_CLOSE = 0x603
+
+L1GPU_FB_BLIT_WAIT_FOR_COMPLETION = (1 << 32)
+
+L1GPU_DISPLAY_SYNC_HSYNC = 1
+L1GPU_DISPLAY_SYNC_VSYNC = 2
 
 class LV1Client(RPCClient):
 	def __init__(self, host, port=1337):
@@ -286,7 +338,20 @@ class LV1Client(RPCClient):
 		return self.lv1_get_repository_node_value(lpar, k1, k2, k3, k4)
 
 	def get_area_size(self, addr):
-		return self.lv1_query_logical_partition_address_region_info(addr)[1]
+		return self.lv1_query_logial_partition_address_region_info(addr)[1]
+
+	def lv1_gpu_fifo_init(self, ctx, get, put, ref):
+		self.lv1_gpu_context_attribute(ctx, L1GPU_CONTEXT_ATTRIBUTE_FIFO_INIT, get, put, ref, 0)
+	def lv1_gpu_display_sync(self, ctx, head, mode):
+		self.lv1_gpu_context_attribute(ctx, L1GPU_CONTEXT_ATTRIBUTE_DISPLAY_SYNC, head, mode, 0, 0)
+	def lv1_gpu_display_flip(self, ctx, head, ddr_offset):
+		self.lv1_gpu_context_attribute(ctx, L1GPU_CONTEXT_ATTRIBUTE_DISPLAY_FLIP, head, ddr_offset, 0, 0)
+	def lv1_gpu_fb_setup(self, ctx, xdr_lpar, xdr_size, ioif_offset):
+		self.lv1_gpu_context_attribute(ctx, L1GPU_CONTEXT_ATTRIBUTE_FB_SETUP, xdr_lpar, xdr_size, ioif_offset, 0)
+	def lv1_gpu_fb_blit(self, ctx, ddr_offset, ioif_offset, sync_width, pitch):
+		self.lv1_gpu_context_attribute(ctx, L1GPU_CONTEXT_ATTRIBUTE_FB_BLIT, ddr_offset, ioif_offset, sync_width, pitch)
+	def lv1_gpu_fb_close(self, ctx):
+		self.lv1_gpu_context_attribute(ctx, L1GPU_CONTEXT_ATTRIBUTE_FB_CLOSE, 0, 0, 0, 0)
 
 if __name__ == "__main__":
 	print "Connecting to PS3..."

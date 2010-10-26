@@ -27,7 +27,8 @@ enum {
 	RPC_HVCALL,
 	RPC_ADDMMIO,
 	RPC_DELMMIO,
-	RPC_CLRMMIO
+	RPC_CLRMMIO,
+	RPC_MEMSET,
 };
 
 struct rpc_header {
@@ -106,6 +107,30 @@ void memcpy16(u16 *dst, u16 *src, s32 size)
 	}
 }
 
+void memset64(u64 *dst, u64 val, s32 size)
+{
+	while (size > 0) {
+		*dst++ = val;
+		size -= 8;
+	}
+}
+
+void memset32(u32 *dst, u32 val, s32 size)
+{
+	while (size > 0) {
+		*dst++ = val;
+		size -= 4;
+	}
+}
+
+void memset16(u16 *dst, u16 val, s32 size)
+{
+	while (size > 0) {
+		*dst++ = val;
+		size -= 2;
+	}
+}
+
 void memcpy_align(void *dst, void *src, u32 size)
 {
 	u64 t = ((u64)dst)|((u64)src)|size;
@@ -118,6 +143,21 @@ void memcpy_align(void *dst, void *src, u32 size)
 		memcpy16(dst, src, size);
 	} else {
 		memcpy(dst, src, size);
+	}
+}
+
+void memset_align(void *dst, u64 val, u32 size)
+{
+	u64 t = ((u64)dst)|size;
+
+	if ((t&7) == 0) {
+		memset64(dst, val, size);
+	} else if ((t&3) == 0) {
+		memset32(dst, val, size);
+	} else if ((t&1) == 0) {
+		memset16(dst, val, size);
+	} else {
+		memset(dst, val, size);
 	}
 }
 
@@ -138,7 +178,8 @@ static void netrpc_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct 
 	u64 regs[9];
 	u32 numout;
 	u32 size;
-	
+	u64 val;
+
 	switch (hdr->cmd) {
 		case RPC_PING:
 			hdr->reply.retcode = 0;
@@ -166,6 +207,12 @@ static void netrpc_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct 
 			}
 			memcpy(tmpbuf, hdr->memop.data, hdr->memop.size);
 			memcpy_align(hdr->memop.addr, tmpbuf, hdr->memop.size);
+			hdr->reply.retcode = 0;
+			sendbuf(REPLY_SIZE, addr, port);
+			break;
+		case RPC_MEMSET:
+			memcpy(&val, hdr->memop.data, sizeof(u64));
+			memset_align(hdr->memop.addr, val, hdr->memop.size);
 			hdr->reply.retcode = 0;
 			sendbuf(REPLY_SIZE, addr, port);
 			break;
