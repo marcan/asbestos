@@ -21,13 +21,6 @@ p.add_mmio(ddr_lpar, 254<<20)
 
 ctrl_size = 65536
 ctx_handle, ctrl_lpar, drv_lpar, rep_lpar, rep_size = p.lv1_gpu_context_allocate(mem_handle, 0)
-print "CH1"
-ctx_handle, ctrl_lpar, drv_lpar, rep_lpar, rep_size = p.lv1_gpu_context_allocate(mem_handle, 0)
-print "CH2"
-ctx_handle, ctrl_lpar, drv_lpar, rep_lpar, rep_size = p.lv1_gpu_context_allocate(mem_handle, 0)
-print "CH3"
-ctx_handle, ctrl_lpar, drv_lpar, rep_lpar, rep_size = p.lv1_gpu_context_allocate(mem_handle, 0)
-print "CH4"
 
 p.add_mmio(ctrl_lpar, ctrl_size)
 
@@ -38,9 +31,9 @@ xdr_lpar = None
 try:
 	xdr_ioif = 0x0c000000
 	xdr_size = 1024*1024*16
-	xdr_lpar, muid = p.lv1_allocate_memory(xdr_size, 21, 0, 0)
+	xdr_lpar, muid = p.lv1_allocate_memory(xdr_size, 20, 0, 0)
 
-	fifo_size = 1024*1024*2
+	fifo_size = 65536
 	fifo_ioif = xdr_ioif
 	fifo_lpar = xdr_lpar
 
@@ -51,7 +44,7 @@ try:
 	p.lv1_gpu_context_iomap(ctx_handle, xdr_ioif, xdr_lpar, xdr_size, \
 		CBE_IOPTE_PP_W | CBE_IOPTE_PP_R | CBE_IOPTE_M)
 
-	p.lv1_gpu_fb_setup(ctx_handle, fifo_lpar, fifo_size, fifo_ioif)
+	#p.lv1_gpu_fb_setup(ctx_handle, fifo_lpar, fifo_size, fifo_ioif)
 
 	fifo = RSXFIFO(p, ctx_handle, ctrl_lpar, fifo_lpar, fifo_ioif, fifo_size)
 	fifo.show()
