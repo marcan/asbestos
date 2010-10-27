@@ -307,7 +307,7 @@ class LV1Client(RPCClient):
 				raise ValueError("Unknown LPAR ID '%s'"%spath[0])
 		spath = spath[1:]
 		vid = 0
-		if spath[1] == "sony":
+		if spath[0] == "sony":
 			spath = spath[1:]
 			vid = 0x8000000000000000
 		if len(spath) < 1:
