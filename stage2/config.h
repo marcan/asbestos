@@ -16,6 +16,6 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 //#define NETRPC_ENABLE
 
 // Configure the (currently hardcoded) kernel arguments
-#define DEFAULT_BOOTARGS "udbg-immortal ps3fb=2m video=ps3fb:mode:2 root=/dev/nfs rw nfsroot=192.168.3.171:/home/marcansoft/sony/ps3/nfsroot ip=dhcp init=/linuxrc"
+#define DEFAULT_BOOTARGS "udbg-immortal video=ps3fb:mode:3 root=/dev/nfs rw nfsroot=192.168.3.171:/home/marcansoft/sony/ps3/nfsroot ip=dhcp init=/linuxrc"
 
 #endif
