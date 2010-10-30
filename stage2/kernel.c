@@ -14,6 +14,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "libfdt.h"
 #include "string.h"
 #include "elf.h"
+#include "config.h"
 
 #define VECSIZE 65536
 static u8 vec_buf[VECSIZE];
@@ -26,7 +27,7 @@ extern char dt_blob_start[];
 
 #define ADDR_LIMIT ((u64)__base)
 
-static char *bootargs = "udbg-immortal video=ps3fb:mode:2 root=/dev/nfs rw nfsroot=192.168.3.171:/home/marcansoft/sony/ps3/nfsroot ip=dhcp init=/linuxrc";
+static char *bootargs = DEFAULT_BOOTARGS;
 
 static u64 *entry[3] = {NULL,NULL,NULL}; // function descriptor for the kernel entrypoint
 
