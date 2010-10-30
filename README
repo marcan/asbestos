@@ -62,7 +62,7 @@ config host
 
 config boot
         option networkid        ps3
-        option filename         dtbImage.ps3.bin
+        option filename         vmlinux
         option servername       foobar
         option serveraddress    192.168.3.171
 
@@ -125,20 +125,14 @@ The GameOS environment is essentially the same as the OtherOS environment, as
 they are just different LPAR configurations on the same hypervisor. The
 following differences are known to exist:
 
-- Boot memory is 16MB instead of 128MB. This restricts the size of the Linux
-  kernel (and any initrd) and causes issues with the allocation for the shadow
-  framebuffer. For now, you need to reduce the framebuffer allocation size. This
-  will be fixed in the future. One possibility to bypass this is to make
-  AsbestOS responsible for allocating the rest of RAM, and make Linux use it as
-  soon as possible (currently, the remaining RAM is added halfway through kernel
-  startup). Also, as a consequence of the 16MB initial size of RAM, the kernel
-  uses a silly value for the maximum number of threads. Use a wrapper script
-  around /sbin/init and poke /proc/sys/kernel/threads-max to work around the
-  issue. You might also need to run 'ulimit -u unlimited'.
+- Boot memory is 16MB instead of 128MB. Using my ps3-linux.git, pretty much all
+  issues caused by this should be resolved. Former issues included framebuffer
+  memory limitations, threads-max and ulimit being set way too low, etc. The
+  total amount of memory is the same as under OtherOS, only the bootmem split
+  changes.
 
-- 3D support is obviously available, but its use is unknown. For all we know 3D
-  support might actually exist in OtherOS mode too, but it definitely must exist
-  under GameOS for obvious reasons.
+- 3D support is available via a preallocated 3D object ID in the RSX. There is
+  a proof of concept remote render implementation under tools/netrpc/rsxtest.py.
 
 - Flash and HDD access limitations are different. Currently, Linux seems unable
   to access these devices out of the box. Investigation needed.
@@ -146,9 +140,6 @@ following differences are known to exist:
 - Linux gets access to an additional SPE, so you get 7 instead of 6.
 
 == TODO ==
-
-Implement devicetrees so we can switch to a zImage instead of the dtbImage.ps3
-nonsense.
 
 Support some kind of video output, maybe.
 
