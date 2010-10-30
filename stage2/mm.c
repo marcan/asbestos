@@ -228,7 +228,7 @@ void mm_init(void)
 	printf("Bootmem = %ld bytes (%ldMB)\n", rm_size, rm_size>>20);
 
 	mm_bootmem_size = rm_size;
-	
+
 	u64 exp_size = rgntotal - rm_size;
 	exp_size &= ~(HIGHMEM_PALIGN-1);
 
@@ -250,7 +250,7 @@ void mm_init(void)
 
 	highmem_ptr = mm_highmem_addr;
 
-	printf("Highmem = %ld bytes (%ldMB)\n", mm_highmem_size, mm_highmem_size>>20);
+	printf("Highmem = %ld bytes (%ldMB) at 0x%lx\n", mm_highmem_size, mm_highmem_size>>20, mm_highmem_addr);
 }
 
 void mm_shutdown(void)

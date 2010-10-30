@@ -38,7 +38,8 @@ extern volatile u64 _thread1_vector;
 static void devtree_prepare(void)
 {
 	int res, node;
-	u64 memreg[] = {0, mm_bootmem_size, mm_highmem_addr, mm_highmem_size};
+	u64 memreg1[] = {0, mm_bootmem_size};
+	u64 memreg2[] = {mm_highmem_addr, mm_highmem_size};
 
 	res = fdt_open_into(dt_blob_start, __devtree, DT_BUFSIZE);
 	if (res < 0)
@@ -56,9 +57,13 @@ static void devtree_prepare(void)
 	if (node < 0)
 		fatal("/memory node not found in devtree");
 
-	res = fdt_setprop(__devtree, node, "reg", memreg, sizeof(memreg));
+	res = fdt_setprop(__devtree, node, "reg", memreg1, sizeof(memreg1));
 	if (res < 0)
 		fatal("couldn't set memory.reg property");
+
+	res = fdt_setprop(__devtree, node, "sony,lv1-highmem", memreg2, sizeof(memreg2));
+	if (res < 0)
+		fatal("couldn't set memory.sony,lv1-highmem property");
 
 	res = fdt_add_mem_rsv(__devtree, (u64)__devtree, DT_BUFSIZE);
 	if (res < 0)
