@@ -96,29 +96,28 @@ already has and just didn't tell me).
 
 == Kernel ==
 
-Standard ps3-linux.git kernels should work. However, you should reduce the
-allocation size for the framebuffer to 2MB or so (and use a small modde, like
-480p).
+AsbestOS boots vmlinux kernels (same as usually used with petitboot and other
+kexec-based bootloaders). This is an ELF format kernel. AsbestOS provides the
+devtree and other information to the kernel. AsbestOS is also responsible for
+allocating all of RAM and passing the resulting memory region to the kernel.
+Current mainline and official ps3-linux.git do not support receiving this
+information and will not work (they will be restricted to 16MB RAM), so you
+*must* use the patched kernel available at:
 
-If you want early debugging via dbgcli from the kernel, check out the patches
-at: http://git.marcansoft.com/?p=ps3-linux.git . There's also a useful .config
-there.
+http://git.marcansoft.com/?p=ps3-linux.git
 
-To build the kernel, use 'make dtbImage.ps3'. The binary that you need to use
-in your TFTP server is at arch/powerpc/boot/dtbImage.ps3.bin
+This git tree also contains patches for early debugging via Ethernet using
+dbgcli and a useful default configuration.
 
-To specify commandline arguments, edit arch/powerpc/boot/dts/ps3.dts like this:
+To build such a kernel, simply 'make vmlinux'. The file is built in the root
+directory of the kernel sources. You'll probably want to strip the kernel to
+significantly reduce the size of the ELF image:
 
-	chosen {
-		bootargs = "your boot arguments here";
-	};
+$ make vmlinux
+$ powerpc64-unknown-linux-gnu-objcopy -S vmlinux vmlinux.stripped
 
-For example, I use the following:
-
- udbg-immortal video=ps3fb:mode:2 root=/dev/nfs rw
- nfsroot=192.168.3.171:/home/marcansoft/sony/ps3/nfsroot ip=dhcp init=/linuxrc
-
-Yes, this is ugly and will change once AsbestOS gains devicetree support.
+Commandline arguments are currently hardcoded into AsbestOS (stage2/config.h),
+NOT the kernel.
 
 == Linux environment ==
 
