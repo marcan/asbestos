@@ -17,6 +17,11 @@ empty dir and run
 
 $ cd toolchain && ./buildit.sh ppu
 
+You also need the 'lzma' utility from xz-utils, and the 'dtc' utility. You can
+grab the latter here: http://git.jdl.com/gitweb/?p=dtc.git . Just clone the git
+repo and type 'make' to build, then copy the resulting 'dtc' binary to your
+$PS3DEV/bin directory.
+
 To compile stage1 or stage2, just type 'make' in the respective directories.
 You can also compile the UDP debug message client by doing the same in the tools
 directory. 'make' in the root of the source tree will do all three.
