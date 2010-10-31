@@ -71,6 +71,9 @@ _exception_start:
 	std r0, 0(sp)
 	/* exception number = arg */
 	mr r3, r0
+	/* set up the TOC register */
+	lis r2, (__toc_start+0x8000)@h
+	ori r2, r2, (__toc_start+0x8000)@l
 	bl exception_handler
 
 	ld r3, 0x2100(0) ; mtcr r3
