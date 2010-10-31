@@ -164,6 +164,9 @@ int printf(const char *fmt, ...)
 	size_t msgsize = vsnprintf(pmsg, MAX_MESSAGE_SIZE, fmt, ap);
 	va_end(ap);
 
+	if (msgsize > MAX_MESSAGE_SIZE)
+		msgsize = MAX_MESSAGE_SIZE;
+
 	dbg.descr.buf_size = header_size + msgsize;
 	h_ip->total_length = msgsize + sizeof(struct udphdr) + sizeof(struct iphdr);
 	h_udp->len = msgsize + sizeof(struct udphdr);
