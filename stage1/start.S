@@ -69,26 +69,3 @@ return:
 	mtlr r0
 	li r3, 0
 	blr
-
-.global disirq
-disirq:
-	mfmsr r3
-	/* disable interrupts */
-	rldicl r3, r3, 48, 1
-	rotldi r3, r3, 16
-	mtmsrd r3, 1
-	blr
-
-.global __thread_catch
-.global __thread_catch_end
-
-/* code to overwrite the decrementer interrupt */
-__thread_catch:
-	ld r3, 0x918(0)
-	cmpldi r3, 0
-	beq __thread_catch
-	mtctr r3
-	bctr
-	nop
-	.quad 0
-__thread_catch_end:

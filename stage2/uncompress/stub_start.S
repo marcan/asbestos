@@ -16,12 +16,17 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 	.global _start
 
 _start:
+	/* disable interrupts */
+	mfmsr r0
+	rldicl r0, r0, 48, 1
+	rotldi r0, r0, 16
+	mtmsrd r0, 0
+
+	/* calculate our realmode base */
 	mflr r0
 	bl 1f
 1:
 	mflr r30
-
-	/* calculate our realmode base */
 	addi r30, r30, (_start - 1b)
 	clrldi r30, r30, 1
 
@@ -39,12 +44,28 @@ _start:
 	rfid
 
 realmode:
+	/* install thread catcher in the decrementer vector */
+	addi r3, r30, (__thread_catch - _start)
+	li r4, 0x900
+	ld r5, 0(r3) ; std r5, 0(r4)
+	ld r5, 8(r3) ; std r5, 8(r4)
+	ld r5, 16(r3) ; std r5, 16(r4)
+	ld r5, 24(r3) ; std r5, 24(r4)
+	dcbst 0, r4 ; sync ; icbi 0, r4
 
-	mfmsr r3
-	/* disable interrupts */
-	rldicl r3, r3, 48, 1
-	rotldi r3, r3, 16
-	mtmsrd r3, 0
+	/* now point all the other vectors to the decrementer */
+	li r3, 0x100
+	lis r4, 0x4800
+	ori r4, r4, 0x0902 /* ba 0x900 */
+_vector_loop:
+	cmpldi r3, 0x900
+	beq _vector_skip
+	stw r4, 0(r3)
+	dcbst 0, r3 ; sync ; icbi 0, r3
+_vector_skip:
+	addi r3, r3, 0x80
+	cmpldi r3, 0x1800
+	blt _vector_loop
 
 	mr r4, r30
 
@@ -139,6 +160,17 @@ _flush_loop:
 	blt _flush_loop
 
 	b __stage2_base
+
+/* code to overwrite the decrementer interrupt */
+__thread_catch:
+	ld r3, 0x918(0)
+	cmpldi r3, 0
+	beq __thread_catch
+	mtctr r3
+	bctr
+	nop
+	.quad 0
+__thread_catch_end:
 
 /* shutdown */
 	.global panic

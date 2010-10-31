@@ -66,20 +66,6 @@ static void ipatch(void *addr, u32 instr)
 	flushblock(addr);
 }
 
-extern u8 __thread_catch[];
-extern u8 __thread_catch_end[];
-
-static void *memcpy(void *dst, const void *src, int len)
-{
-	int i;
-
-	for (i = 0; i < len; i++)
-		((unsigned char *)dst)[i] = ((unsigned char *)src)[i];
-	return dst;
-}
-
-void disirq(void);
-
 CBTHUNK(int, device_attach, (int device_id))
 {
 	ep_pipe = usbOpenEndpoint(device_id, NULL);
@@ -152,21 +138,7 @@ CBTHUNK(int, device_attach, (int device_id))
 	asm("mfspr %0, 0x88" : "=r"(tid));
 	printf("Current thread ID: %d\n", 2-(tid>>30));
 
-	printf("Catching the other thread and taking the plunge...\n");
-	disirq();
-
-	u8 *decr_vector = (void*)0x8000000000000900;
-	memcpy(decr_vector, __thread_catch, __thread_catch_end - __thread_catch);
-	flushblock(decr_vector);
-
-	int i;
-	for (i=0x100; i<0x1800; i+=0x80) {
-		if (i == 0x900)
-			continue;
-		u32 *vector = (void*)(0x8000000000000000+i);
-		*vector = 0x48000902; // ba 0x900
-		flushblock(vector);
-	}
+	printf("Taking the plunge...\n");
 
 	asm ("bl __stage2; b panic");
 	return 0;
