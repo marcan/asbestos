@@ -20,7 +20,7 @@ _start:
 	/* release it here (it will already be in realmode and with IRQs disabled) */
 	lis r3, _threads_start@h
 	ori r3, r3, _threads_start@l
-	std r3, 0x918(0)
+	std r3, 0x920(0)
 
 _threads_start:
 	/* both threads end up running here */

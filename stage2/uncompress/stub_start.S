@@ -45,12 +45,15 @@ _start:
 
 realmode:
 	/* install thread catcher in the decrementer vector */
+	li r5, 0
+	std r5, 0x920(0) /* release */
+	std r5, 0x928(0) /* ack */
 	addi r3, r30, (__thread_catch - _start)
 	li r4, 0x900
-	ld r5, 0(r3) ; std r5, 0(r4)
-	ld r5, 8(r3) ; std r5, 8(r4)
-	ld r5, 16(r3) ; std r5, 16(r4)
-	ld r5, 24(r3) ; std r5, 24(r4)
+	ld r5, 0x00(r3) ; std r5, 0x00(r4)
+	ld r5, 0x08(r3) ; std r5, 0x08(r4)
+	ld r5, 0x10(r3) ; std r5, 0x10(r4)
+	ld r5, 0x18(r3) ; std r5, 0x18(r4)
 	dcbst 0, r4 ; sync ; icbi 0, r4
 
 	/* now point all the other vectors to the decrementer */
@@ -67,9 +70,15 @@ _vector_skip:
 	cmpldi r3, 0x1800
 	blt _vector_loop
 
-	mr r4, r30
+	/* wait for the other thread to arrive */
+_wait_loop:
+	sync
+	ld r3, 0x928(0)
+	cmpld r3, 0
+	beq _wait_loop
 
 	/* relocate to our real address */
+	mr r4, r30
 	lis r5, __self_start@h
 	ori r5, r5, __self_start@l
 	lis r6, __lzma_end@h
@@ -163,13 +172,15 @@ _flush_loop:
 
 /* code to overwrite the decrementer interrupt */
 __thread_catch:
-	ld r3, 0x918(0)
+	li r3, 1
+	std r3, 0x928(0)
+__thread_loop:
+	ld r3, 0x920(0)
 	cmpldi r3, 0
-	beq __thread_catch
+	beq __thread_loop
 	mtctr r3
 	bctr
 	nop
-	.quad 0
 __thread_catch_end:
 
 /* shutdown */
