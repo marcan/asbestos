@@ -114,9 +114,12 @@ http://git.marcansoft.com/?p=ps3-linux.git
 This git tree also contains patches for early debugging via Ethernet using
 dbgcli and a useful default configuration.
 
-To build such a kernel, simply 'make vmlinux'. The file is built in the root
-directory of the kernel sources. You'll probably want to strip the kernel to
-significantly reduce the size of the ELF image:
+To build such a kernel, simply 'make vmlinux' (normal Linux cross-compiling
+settings apply unless you're compiling on a PS3; check pmake.sh for some
+example vars). The file is built in the root directory of the kernel sources.
+
+You'll probably want to strip the kernel to significantly reduce the size of
+the ELF image:
 
 $ make vmlinux
 $ powerpc64-unknown-linux-gnu-objcopy -S vmlinux vmlinux.stripped
