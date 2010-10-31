@@ -59,12 +59,12 @@ SECTIONS {
 	.pad : {
 		LONG(0);
 	}
-	__lzohdr = .;
-	. += 8;
-	__lzodata = .;
+	__lzma = .;
 
-	/* make space for the lzo data */
+	/* make space for the lzma data */
 	. += 0x100000;
+
+	__lzma_end = .;
 	
 	__bss_start = .;
 	.bss : {

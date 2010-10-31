@@ -51,14 +51,8 @@ realmode:
 	/* relocate to our real address */
 	lis r5, __self_start@h
 	ori r5, r5, __self_start@l
-	lis r6, __lzodata@h
-	ori r6, r6, __lzodata@l
-
-	/* add the size of the LZO data */
-	sub r7, r6, r5
-	add r7, r7, r4
-	lwz r7, -4(r7)
-	add r6, r6, r7
+	lis r6, __lzma_end@h
+	ori r6, r6, __lzma_end@l
 
 	cmpld r4, r5
 	beq _no_reloc
@@ -110,9 +104,41 @@ _bss_loop:
 	blt _bss_loop
 _nobss:
 
-	/* jump to main (panic if it returns) */
-	bl main
-	b panic
+	/* uncompress main stage2 */
+	lis r3, probs@h
+	ori r3, r3, probs@l
+	lis r4, __lzma@h
+	ori r4, r4, __lzma@l
+	lis r5, 0x1000
+	li r6, 0
+	/* r6: unused, used to be &inSizeProcessed */
+	lis r7, __stage2_base@h
+	ori r7, r7, __stage2_base@l
+	lis r8, 0x1000
+	li r9, 0
+	/* r9: unused, used to be &outSizeProcessed, see below */
+
+	/* HACK: this is mostly 32bit code running in 64bit mode (with a few fixes)
+	   It does ugly things like clear the top 32 bits of callee-save registers,
+	   but we don't care */
+	bl LzmaDecode
+
+	/* if fail, panic */
+	cmplwi r3, 0
+	bne panic
+
+	/* HACK: LzmaDecode returns the end of the output buffer in r4 */
+	lis r3, __stage2_base@h
+	ori r3, r3, __stage2_base@l
+_flush_loop:
+	dcbst 0, r3
+	sync
+	icbi 0, r3
+	addi r3, r3, 32
+	cmpld r3, r4
+	blt _flush_loop
+
+	b __stage2_base
 
 /* shutdown */
 	.global panic
@@ -127,3 +153,6 @@ reboot:
 	li r3, 1
 	li r11, LV1_PANIC
 	lv1call
+
+	.section .bss
+	.lcomm probs, 14134

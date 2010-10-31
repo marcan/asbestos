@@ -2,5 +2,5 @@
 *.elf
 *.bin
 .deps
-*.lzo
+*.lzma
 devtree.S

@@ -8,6 +8,7 @@
 include ../common/ppu.mak
 
 DTC=$(PS3DEV)/bin/dtc
+LZMA=lzma
 
 STUB_LDFLAGS := $(LDFLAGS) -Wl,--gc-sections -Wl,-T,uncompress/stub.ld
 LDFLAGS += -Wl,--gc-sections -Wl,-T,stage2.ld
@@ -35,18 +36,21 @@ OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o malloc.o \
 	time.o tftp.o gelic_netif.o exceptions.o exc_vector.o mm.o netrpc.o \
 	cleanup.o devtree.o kernel.o $(LWIP_OBJS) $(FDT_OBJS)
 
-STUB_OBJS = uncompress/stub_start.o uncompress/stub_main.o uncompress/minilzo.o
+STUB_OBJS = uncompress/stub_start.o uncompress/unlzma.o
 
 all: stage2.bin
 
 .PRECIOUS: stage2_raw.bin
 
-stage2.bin : uncompress/stub.bin stage2_raw.lzo
-	cat uncompress/stub.bin stage2_raw.lzo > $@
+stage2.bin : uncompress/stub.bin stage2_raw.lzma
+	cat uncompress/stub.bin stage2_raw.lzma > $@
 
-%.lzo: %.bin uncompress/lzocomp
-	@echo "  LZOCOMP   $@"
-	uncompress/lzocomp $< $@
+%.lzma: %.bin
+	@echo "  LZMA      $@"
+	@$(LZMA) -c $< > $@.tmp
+	@dd if=$@.tmp bs=1 count=1 > $@ 2>/dev/null
+	@dd if=$@.tmp bs=13 skip=1 >> $@ 2>/dev/null
+	@rm $@.tmp
 
 %.bin: %.elf
 	@echo "  OBJCOPY   $@"
@@ -74,14 +78,10 @@ stage2_raw.elf: $(OBJS) stage2.ld
 	@mkdir -p $(DEPDIR)
 	@$(PREFIX)gcc $(CFLAGS) -Wp,-MMD,$(DEPDIR)/$(*F).d,-MQ,"$@",-MP -c -o $@ $<
 
-uncompress/lzocomp : uncompress/lzocomp.c
-	@echo "  HOSTCC    $<"
-	gcc -o $@ $< -llzo2
-
 clean:
 	rm -rf $(DEPDIR)
-	rm -f $(OBJS) *.elf *.bin *.lzo
-	rm -f $(STUB_OBJS) stub/lzocomp
+	rm -f $(OBJS) *.elf *.bin *.lzma
+	rm -f $(STUB_OBJS)
 
 -include $(DEPDIR)/*
 
