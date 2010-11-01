@@ -264,6 +264,8 @@ void netrpc_init(void)
 	if (!pcb)
 		fatal("netrpc: Could not allocate PCB for netrpc");
 	outbuf = pbuf_alloc(PBUF_TRANSPORT, BUFSIZE, PBUF_RAM);
+	if (!outbuf)
+		fatal("netrpc: Could not allocate buffer");
 
 	udp_bind(pcb, IP_ADDR_ANY, PORT);
 	udp_recv(pcb, netrpc_recv, NULL);
@@ -271,10 +273,12 @@ void netrpc_init(void)
 }
 void netrpc_shutdown(void)
 {
-	udp_remove(pcb);
-	outbuf = NULL;
-	pbuf_free(outbuf);
+	if (pcb)
+		udp_remove(pcb);
 	pcb = NULL;
+	if (outbuf)
+		pbuf_free(outbuf);
+	outbuf = NULL;
 	printf("netrpc: shut down\n");
 }
 
