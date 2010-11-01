@@ -55,9 +55,9 @@ freenode) and we'll see what we can do.
 To get a kernel to load (see below for instructions to build one), you need to
 have a DHCP server on your network. It needs to be configured to feed a boot
 server and filename to the PS3. The boot server should point to a machine
-running a TFTP server that can serve the specified file, which should be the
-kernel image. For example, on an OpenWRT Kamikaze router, put something like
-this on your /etc/config/dhcp:
+running a TFTP server that can serve the specified file, which should be a
+kboot.conf style configuration file. For example, on an OpenWRT Kamikaze router,
+put something like this on your /etc/config/dhcp:
 
 config host
         option name       ps3
@@ -67,7 +67,7 @@ config host
 
 config boot
         option networkid        ps3
-        option filename         vmlinux
+        option filename         kboot.conf
         option servername       foobar
         option serveraddress    192.168.3.171
 
@@ -75,6 +75,22 @@ Where 192.168.3.60 is the IP that you want your PS3 to get and 192.168.3.171 is
 the IP of the TFTP server. The server name doesn't really matter, but it's a
 good idea to set it to the hostname of the TFTP server. Don't forget to specify
 the MAC address of your PS3 correctly.
+
+The kboot.conf follows the usual syntax that is used with petitboot and friends.
+For example, the following would be a minimal file:
+
+linux='vmlinux  video=ps3fb:mode:3 root=/dev/nfs rw nfsroot=..... ip=dhcp'
+
+This will TFTP-load a kernel named 'vmlinux', passing the specified arguments.
+The text to the left of the first = is a label. Quotes surrounding the right
+hand side are optional.
+
+You can also specify an initrd by either using a global initrd=file line
+(this applies to all entries) or a per-kernel initrd=file option. The initrd
+will also be loaded via TFTP. root=... may also be specified as a global option.
+
+Currently only the default entry (the first one, or the one specified with
+default=<label>) is used, as there is no way to select the boot option.
 
 == Compatible devices ==
 
