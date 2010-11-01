@@ -25,7 +25,7 @@ typedef void (*tftp_cb_t)(void *arg, struct tftp_client *clt, enum tftp_status s
 
 struct tftp_client *tftp_new(void);
 err_t tftp_connect(struct tftp_client *clt, struct ip_addr *addr, u16_t port);
-err_t tftp_get(struct tftp_client *clt, char *name, void *buffer, size_t max_size, tftp_cb_t cb, void *arg);
+err_t tftp_get(struct tftp_client *clt, const char *name, void *buffer, size_t max_size, tftp_cb_t cb, void *arg);
 void tftp_remove(struct tftp_client *clt);
 
 #endif

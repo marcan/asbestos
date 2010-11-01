@@ -202,7 +202,7 @@ err_t tftp_connect(struct tftp_client *clt, struct ip_addr *ipaddr, u16_t port)
 	return ERR_OK;
 }
 
-err_t tftp_get(struct tftp_client *clt, char *name, void *buffer, size_t max_size, tftp_cb_t cb, void *arg)
+err_t tftp_get(struct tftp_client *clt, const char *name, void *buffer, size_t max_size, tftp_cb_t cb, void *arg)
 {
 	err_t err;
 	int len;
