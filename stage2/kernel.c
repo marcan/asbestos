@@ -14,7 +14,6 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "libfdt.h"
 #include "string.h"
 #include "elf.h"
-#include "config.h"
 
 #define VECSIZE 65536
 static u8 vec_buf[VECSIZE];
@@ -27,7 +26,7 @@ extern char dt_blob_start[];
 
 #define ADDR_LIMIT ((u64)__base)
 
-static char *bootargs = DEFAULT_BOOTARGS;
+static char bootargs[MAX_CMDLINE_SIZE];
 
 static u64 *entry[3] = {NULL,NULL,NULL}; // function descriptor for the kernel entrypoint
 
@@ -165,6 +164,22 @@ int kernel_load(const u8 *addr, u32 len)
 	printf("load_elf_kernel: kernel loaded, entry at 0x%lx\n", ehdr->e_entry);
 
 	return 0;
+}
+
+void kernel_build_cmdline(const char *parameters, const char *root)
+{
+	bootargs[0] = 0;
+
+	if (root) {
+		strlcat(bootargs, "root=", MAX_CMDLINE_SIZE);
+		strlcat(bootargs, root, MAX_CMDLINE_SIZE);
+		strlcat(bootargs, " ", MAX_CMDLINE_SIZE);
+	}
+
+	if (parameters)
+		strlcat(bootargs, parameters, MAX_CMDLINE_SIZE);
+
+	printf("Kernel command line: '%s'\n", bootargs);
 }
 
 void kernel_launch(void)

@@ -19,6 +19,7 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "netrpc.h"
 #include "cleanup.h"
 #include "kernel.h"
+#include "kbootconf.h"
 
 #include "tftp.h"
 
@@ -26,29 +27,29 @@ enum state_t {
 	STATE_START,
 	STATE_WAIT_NET,
 	STATE_GOT_NET,
+	STATE_GOT_CONF,
 	STATE_GOT_KERNEL,
 	STATE_WAIT_TFTP,
 	STATE_IDLE,
 };
 
+extern u64 _thread1_active;
+
 static enum state_t gstate;
 
-static u8 *recv_buf;
-static size_t recv_buf_size;
-
 static struct tftp_client *tftp = NULL;
-
 static enum state_t t_next;
 static enum tftp_status t_status;
 static size_t t_recvd;
 
-extern u64 _thread1_active;
+static int boot_entry = 0;
+static void *kernel_buf;
 
 void shutdown_and_launch(void);
 
 void tftp_cb(void *arg, struct tftp_client *clt, enum tftp_status status, size_t recvd)
 {
-	printf("Transfer complete, status %d. Image size: %ld bytes\n", status, recvd);
+	printf("Transfer complete, status %d, size: %ld bytes\n", status, recvd);
 
 	t_recvd = recvd;
 	t_status = status;
@@ -90,8 +91,8 @@ void sequence(void)
 #endif
 #ifdef AUTO_TFTP
 		if (eth.dhcp->offered_si_addr.addr == 0 || !eth.dhcp->boot_file_name) {
-			printf("Missing boot settings, cannot continue. Shutting down...\n");
-			lv1_panic(0);
+			printf("Missing boot settings, cannot continue. Rebooting...\n");
+			lv1_panic(1);
 		}
 
 		tftp = tftp_new();
@@ -100,28 +101,54 @@ void sequence(void)
 
 		tftp_connect(tftp, &eth.dhcp->offered_si_addr, 69);
 
-		recv_buf = mm_highmem_freestart();
-		recv_buf_size = mm_highmem_freesize();
-		seq_tftp_get((char*)eth.dhcp->boot_file_name, recv_buf, recv_buf_size, STATE_GOT_KERNEL);
+		printf("Downloading configuration file...\n");
+		seq_tftp_get((char*)eth.dhcp->boot_file_name, conf_buf, MAX_KBOOTCONF_SIZE-1, STATE_GOT_CONF);
 #else
 		gstate = STATE_IDLE;
 #endif
 		break;
 
-	case STATE_GOT_KERNEL:
-		if (t_status == TFTP_STATUS_OK) {
-			mm_highmem_reserve(t_recvd);
-			if (kernel_load(recv_buf, t_recvd) != 0) {
-				printf("Failed to load kernel\n");
-				printf("Rebooting...\n");
-				lv1_panic(1);
-			}
-			shutdown_and_launch();
-		} else {
+	case STATE_GOT_CONF:
+		if (t_status != TFTP_STATUS_OK) {
 			printf("Transfer did not complete successfully\n");
 			printf("Rebooting...\n");
 			lv1_panic(1);
 		}
+
+		printf("Configuration: %ld bytes\n", t_recvd);
+		conf_buf[t_recvd] = 0;
+
+		kbootconf_parse();
+
+		if (conf.num_kernels == 0) {
+			printf("No kernels found in configuration file. Rebooting...\n");
+			lv1_panic(1);
+		}
+
+		boot_entry = conf.default_idx;
+
+		printf("Starting to boot '%s'\n", conf.kernels[boot_entry].label);
+		printf("Downloading kernel...\n");
+
+		kernel_buf = mm_highmem_freestart();
+		seq_tftp_get(conf.kernels[boot_entry].kernel, kernel_buf, mm_highmem_freesize(), STATE_GOT_KERNEL);
+		break;
+
+	case STATE_GOT_KERNEL:
+		if (t_status != TFTP_STATUS_OK) {
+			printf("Transfer did not complete successfully. Rebooting...\n");
+			lv1_panic(1);
+		}
+
+		mm_highmem_reserve(t_recvd);
+		if (kernel_load(kernel_buf, t_recvd) != 0) {
+			printf("Failed to load kernel. Rebooting...\n");
+			lv1_panic(1);
+		}
+
+		kernel_build_cmdline(conf.kernels[boot_entry].parameters, conf.kernels[boot_entry].root);
+		shutdown_and_launch();
+		break;
 
 	case STATE_WAIT_TFTP:
 		break;

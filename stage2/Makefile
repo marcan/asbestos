@@ -34,7 +34,7 @@ FDT_OBJS = $(addprefix libfdt/,\
 
 OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o malloc.o \
 	time.o tftp.o gelic_netif.o exceptions.o exc_vector.o mm.o netrpc.o \
-	cleanup.o devtree.o kernel.o network.o \
+	cleanup.o devtree.o kernel.o kbootconf.o network.o \
 	$(LWIP_OBJS) $(FDT_OBJS)
 
 STUB_OBJS = uncompress/stub_start.o uncompress/unlzma.o

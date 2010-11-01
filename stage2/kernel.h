@@ -11,7 +11,10 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 
 #include "types.h"
 
+#define MAX_CMDLINE_SIZE 255
+
 int kernel_load(const u8 *addr, u32 len);
+void kernel_build_cmdline(const char *parameters, const char *root);
 void kernel_launch(void);
 
 #endif
