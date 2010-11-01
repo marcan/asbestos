@@ -141,11 +141,14 @@ size_t strspn(const char *s1, const char *s2)
 
 // Quick 'n dirty atoi(), enough for the single-case use we need it for.
 int my_atoi(const char *s) {
-	int ret=0, i, n = strlen(s);
+	int ret=0;
 
-	for (i = 0; i < n; i++) {
-		ret += (s[i]-0x30);
-		if (i != (n-1)) ret *= 10;
+	while(*s) {
+		if (*s < '0' || *s > '9')
+			break;
+		ret *= 10;
+		ret += (*s-'0');
+		s++;
 	}
 
 	return ret;
