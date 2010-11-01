@@ -30,6 +30,8 @@ void *mm_highmem_freestart(void);
 size_t mm_highmem_freesize(void);
 void mm_highmem_reserve(size_t size);
 
+u64 mm_addr_to_kernel(void *addr);
+
 void sync_before_exec(void *addr, int len);
 
 #endif

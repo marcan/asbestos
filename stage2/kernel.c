@@ -35,6 +35,9 @@ typedef void (*kernel_entry)(void *devtree, void *self, void *null);
 extern volatile u64 _thread1_release;
 extern volatile u64 _thread1_vector;
 
+static u8 *initrd_start = NULL;
+static size_t initrd_size = 0;
+
 static void devtree_prepare(void)
 {
 	int res, node;
@@ -53,6 +56,24 @@ static void devtree_prepare(void)
 	if (res < 0)
 		fatal("couldn't set chosen.bootargs property");
 
+	if (initrd_start && initrd_size)
+	{
+		u64 start, end;
+		start = mm_addr_to_kernel(initrd_start);
+		res = fdt_setprop(__devtree, node, "linux,initrd-start", &start, sizeof(start));
+		if (res < 0)
+			fatal("couldn't set chosen.linux,initrd-start property");
+
+		end = mm_addr_to_kernel(initrd_start + initrd_size);
+		res = fdt_setprop(__devtree, node, "linux,initrd-end", &end, sizeof(end));
+		if (res < 0)
+			fatal("couldn't set chosen.linux,initrd-end property");
+
+		res = fdt_add_mem_rsv(__devtree, start, initrd_size);
+		if (res < 0)
+			fatal("couldn't add reservation for the initrd");
+	}
+	
 	node = fdt_path_offset(__devtree, "/memory");
 	if (node < 0)
 		fatal("/memory node not found in devtree");
@@ -180,6 +201,15 @@ void kernel_build_cmdline(const char *parameters, const char *root)
 		strlcat(bootargs, parameters, MAX_CMDLINE_SIZE);
 
 	printf("Kernel command line: '%s'\n", bootargs);
+}
+
+void kernel_set_initrd(void *start, size_t size)
+{
+	printf("Initrd at %p/0x%lx: %ld bytes (%ldKiB)\n", start, \
+	mm_addr_to_kernel(start), size, size/1024);
+
+	initrd_start = start;
+	initrd_size = size;
 }
 
 void kernel_launch(void)

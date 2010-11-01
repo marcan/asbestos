@@ -29,6 +29,8 @@ enum state_t {
 	STATE_GOT_NET,
 	STATE_GOT_CONF,
 	STATE_GOT_KERNEL,
+	STATE_GOT_INITRD,
+	STATE_BOOT,
 	STATE_WAIT_TFTP,
 	STATE_IDLE,
 };
@@ -44,6 +46,7 @@ static size_t t_recvd;
 
 static int boot_entry = 0;
 static void *kernel_buf;
+static void *initrd_buf;
 
 void shutdown_and_launch(void);
 
@@ -140,12 +143,33 @@ void sequence(void)
 			lv1_panic(1);
 		}
 
-		mm_highmem_reserve(t_recvd);
 		if (kernel_load(kernel_buf, t_recvd) != 0) {
 			printf("Failed to load kernel. Rebooting...\n");
 			lv1_panic(1);
 		}
 
+		if (conf.kernels[boot_entry].initrd && conf.kernels[boot_entry].initrd[0]) {
+			printf("Downloading initrd...\n");
+			initrd_buf = mm_highmem_freestart();
+			seq_tftp_get(conf.kernels[boot_entry].initrd, initrd_buf, mm_highmem_freesize(), STATE_GOT_INITRD);
+		} else {
+			gstate = STATE_BOOT;
+		}
+		break;
+
+	case STATE_GOT_INITRD:
+		if (t_status != TFTP_STATUS_OK) {
+			printf("Transfer did not complete successfully. Rebooting...\n");
+			lv1_panic(1);
+		}
+
+		mm_highmem_reserve(t_recvd);
+		kernel_set_initrd(initrd_buf, t_recvd);
+
+		gstate = STATE_BOOT;
+		break;
+
+	case STATE_BOOT:
 		kernel_build_cmdline(conf.kernels[boot_entry].parameters, conf.kernels[boot_entry].root);
 		shutdown_and_launch();
 		break;

@@ -298,6 +298,19 @@ size_t mm_highmem_freesize(void)
 	return mm_highmem_addr + mm_highmem_size - highmem_ptr;
 }
 
+u64 mm_addr_to_kernel(void *addr)
+{
+	u64 a = (u64)addr;
+
+	if (a > mm_bootmem_size)
+		if (a >= mm_highmem_addr && a < (mm_highmem_addr+mm_highmem_size))
+			return a - mm_highmem_addr + mm_bootmem_size;
+		else
+			fatal("mm_addr_to_kernel: out of bounds");
+	else
+		return a;
+}
+
 void sync_before_exec(void *addr, int len)
 {
 	u64 p = ((u64)addr) & ~0x1f;
