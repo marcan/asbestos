@@ -200,7 +200,7 @@ static void netrpc_vector(void *vec0, void *vec1, void *copy_dst, void *copy_src
 	_thread1_release = 1;
 	vector[0] = vec0;
 	printf("netrpc: Taking the plunge...\n");
-	//debug_shutdown();
+	debug_shutdown();
 	((void (*)(void))vector)();
 	lv1_panic(0);
 }
