@@ -2,7 +2,7 @@
 
 Copyright (C) 2008		Segher Boessenkool <segher@kernel.crashing.org>
 Copyright (C) 2009		Haxx Enterprises <bushing@gmail.com>
-Copyright (C) 2010		Hector Martin "marcan" <hector@marcansoft.com>
+Copyright (C) 2010-2011 Hector Martin "marcan" <hector@marcansoft.com>
 
 Portions taken from the Public Domain C Library (PDCLib).
 http://pdclib.rootdirectory.de/
