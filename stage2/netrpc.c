@@ -35,6 +35,7 @@ enum {
 	RPC_MEMSET,
 	RPC_VECTOR,
 	RPC_SYNC,
+	RPC_CALL,
 };
 
 struct rpc_vec {
@@ -44,6 +45,8 @@ struct rpc_vec {
 	void *copy_src;
 	u32 copy_size;
 };
+
+typedef s64 (*rpc_callfn) (u64,u64,u64,u64,u64,u64,u64,u64);
 
 struct rpc_header {
 	u32 cmd;
@@ -75,6 +78,10 @@ struct rpc_header {
 			void *addr;
 			u32 size;
 		} sync;
+		struct {
+			rpc_callfn addr;
+			u64 args[8];
+		} call;
 	};
 } __attribute__((packed));
 
@@ -303,6 +310,13 @@ static void netrpc_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct 
 		case RPC_SYNC:
 			sync_before_exec(hdr->sync.addr, hdr->sync.size);
 			hdr->reply.retcode = 0;
+			sendbuf(REPLY_SIZE, addr, port);
+			break;
+		case RPC_CALL:
+			hdr->reply.retcode = hdr->call.addr(hdr->call.args[0], hdr->call.args[1],
+												hdr->call.args[2], hdr->call.args[3],
+												hdr->call.args[4], hdr->call.args[5],
+												hdr->call.args[6], hdr->call.args[7]);
 			sendbuf(REPLY_SIZE, addr, port);
 			break;
 		default:

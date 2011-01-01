@@ -1,6 +1,13 @@
 #!/usr/bin/python
+#
+#  netrpc.py - use your PS3 as a slave for Python code
+#
+# Copyright (C) 2011  Hector Martin "marcan" <hector@marcansoft.com>
+#
+# This code is licensed to you under the terms of the GNU GPL, version 2;
+# see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 
-import os, sys, socket, struct, lv1calls
+import os, os.path, sys, socket, struct, lv1calls, tempfile, subprocess
 
 def hexdump(s,sep=" "):
 	return sep.join(map(lambda x: "%02x"%ord(x),s))
@@ -114,6 +121,7 @@ class RPCClient(object):
 	RPC_MEMSET = 7
 	RPC_VECTOR = 8
 	RPC_SYNC = 9
+	RPC_CALL = 10
 	def __init__(self, host, port=1337):
 		self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.s.connect((host, port))
@@ -274,6 +282,10 @@ class RPCClient(object):
 		ret = self.rpc(self.RPC_SYNC, args)
 		self.chkret(ret)
 
+	def call(self, descr_addr, *args):
+		args = list(args) + [0] * (8-len(args))
+		args = struct.pack(">Q8Q", descr_addr, *args)
+		return self.rpc(self.RPC_CALL, args)
 
 L1GPU_CONTEXT_ATTRIBUTE_DISPLAY_SYNC = 0x101
 L1GPU_CONTEXT_ATTRIBUTE_DISPLAY_FLIP = 0x102
@@ -365,6 +377,71 @@ class LV1Client(RPCClient):
 		self.lv1_gpu_context_attribute(ctx, L1GPU_CONTEXT_ATTRIBUTE_FB_BLIT, ddr_offset, ioif_offset, sync_width, pitch)
 	def lv1_gpu_fb_close(self, ctx):
 		self.lv1_gpu_context_attribute(ctx, L1GPU_CONTEXT_ATTRIBUTE_FB_CLOSE, 0, 0, 0, 0)
+
+class CompileError(Exception):
+	pass
+
+class CCode(object):
+	def __init__(self, proxy, source_code, addr=0x100000):
+		self.p = proxy
+		prefix = "bin/powerpc64-linux-"
+		gcc_bin = os.path.join(os.environ['PS3DEV'], prefix + "gcc")
+		netrpc_dir = os.path.dirname(__file__)
+		self.source_code = '#include "c_head.h"\n' + source_code
+		tmpdir = tempfile.mkdtemp()
+		binfile = os.path.join(tmpdir, "blob.bin")
+		gcc_args = [
+			gcc_bin,
+			"-Os", "-Wall",
+			"-Wl,-T,%s"%os.path.join(netrpc_dir, "c_link.ld"),
+			"-Wl,--section-start=.hdr=0x%x"%addr,
+			"-I%s"%netrpc_dir,
+			"-mbig-endian", "-mcpu=cell", "-m64",
+			"-ffreestanding", "-nostartfiles", "-nostdlib",
+			"-o", binfile,
+			"-x", "c",
+			"-"
+		]
+
+		proc = subprocess.Popen(gcc_args, stdin=subprocess.PIPE)
+		proc.communicate(self.source_code)
+		proc.wait()
+		if proc.returncode != 0:
+			try:
+				os.remove(binfile)
+			except:
+				pass
+			try:
+				os.rmdir(tmpdir)
+			except:
+				pass
+			raise CompileError("gcc returned %d exit status"%proc.returncode)
+		
+		bfd = open(binfile,"rb")
+		self.bin = bfd.read()
+		bfd.close()
+		os.remove(binfile)
+		os.rmdir(tmpdir)
+
+		self.addr = addr
+		self.desc_addr = struct.unpack(">Q", self.bin[:8])[0]
+		self.uploaded = False
+
+	def dump(self):
+		print "Binary dump:"
+		chexdump(self.bin, self.addr)
+		print "Function descriptor at 0x%x"%self.desc_addr
+
+	def upload(self):
+		self.p.writemem(self.addr, self.bin)
+		self.p.sync_before_exec(self.addr, len(self.bin))
+		self.uploaded = True
+
+	def __call__(self, *args):
+		assert len(args) <= 8
+		if not self.uploaded:
+			self.upload()
+		return self.p.call(self.desc_addr, *args)
 
 if __name__ == "__main__":
 	print "Connecting to PS3..."
