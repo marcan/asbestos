@@ -15,14 +15,31 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "device.h"
 #include "exceptions.h"
 #include "mm.h"
-#include "network.h"
-#include "netrpc.h"
 #include "cleanup.h"
 #include "kernel.h"
 #include "kbootconf.h"
 
 #include "tftp.h"
 
+#ifdef USE_NETWORK
+# include "network.h"
+#endif
+#ifdef NETRPC_ENABLE
+# include "netrpc.h"
+#endif
+
+#ifdef AUTO_HDD
+# include "ff.h"
+# include "diskio.h"
+#endif
+
+extern u64 _thread1_active;
+
+static int boot_entry = 0;
+static void *kernel_buf;
+static void *initrd_buf;
+
+#ifdef USE_NETWORK
 enum state_t {
 	STATE_START,
 	STATE_WAIT_NET,
@@ -35,18 +52,12 @@ enum state_t {
 	STATE_IDLE,
 };
 
-extern u64 _thread1_active;
-
 static enum state_t gstate;
 
 static struct tftp_client *tftp = NULL;
 static enum state_t t_next;
 static enum tftp_status t_status;
 static size_t t_recvd;
-
-static int boot_entry = 0;
-static void *kernel_buf;
-static void *initrd_buf;
 
 void shutdown_and_launch(void);
 
@@ -181,6 +192,25 @@ void sequence(void)
 		break;
 	}
 }
+#endif
+
+#ifdef AUTO_HDD
+int readfile(char *name, void *buf, u32 maxlen)
+{
+	static FIL fil;
+	FRESULT res;
+	u32 bytes_read;
+
+	res = f_open(&fil, name, FA_READ);
+	if (res != FR_OK)
+		return -res;
+	res = f_read(&fil, buf, maxlen, &bytes_read);
+	if (res != FR_OK)
+		return -res;
+	f_close(&fil);
+	return bytes_read;
+}
+#endif
 
 int main(void)
 {
@@ -194,6 +224,7 @@ int main(void)
 	lv2_cleanup();
 	mm_init();
 
+#ifdef USE_NETWORK
 	net_init();
 
 	gstate = STATE_START;
@@ -201,8 +232,79 @@ int main(void)
 		net_poll();
 		sequence();
 	}
+#endif
+#ifdef AUTO_HDD
+	static FATFS fatfs;
+	int res;
+	DSTATUS stat;
+
+	stat = disk_initialize(0);
+	if (stat & ~STA_PROTECT)
+		fatal("disk_initialize() failed");
+
+	printf("Mounting filesystem...\n");
+	res = f_mount(0, &fatfs);
+	if (res != FR_OK)
+		fatal("f_mount() failed");
+
+	printf("Reading kboot.conf...\n");
+	res = readfile("/kboot.conf", conf_buf, MAX_KBOOTCONF_SIZE-1);
+	if (res <= 0) {
+		printf("Could not read kboot.conf (%d), panicking\n", res);
+		lv1_panic(0);
+	}
+	conf_buf[res] = 0;
+	kbootconf_parse();
+
+	if (conf.num_kernels == 0) {
+		printf("No kernels found in configuration file. Panicking...\n");
+		lv1_panic(0);
+	}
+
+	boot_entry = conf.default_idx;
+
+	printf("Starting to boot '%s'\n", conf.kernels[boot_entry].label);
+	printf("Loading kernel (%s)...\n", conf.kernels[boot_entry].kernel);
+
+	kernel_buf = mm_highmem_freestart();
+	res = readfile(conf.kernels[boot_entry].kernel, kernel_buf, mm_highmem_freesize());
+	if (res <= 0) {
+		printf("Could not read kernel (%d), panicking\n", res);
+		lv1_panic(0);
+	}
+	printf("Kernel size: %d\n", res);
+
+	if (kernel_load(kernel_buf, res) != 0) {
+		printf("Failed to load kernel. Rebooting...\n");
+		lv1_panic(1);
+	}
+
+	if (conf.kernels[boot_entry].initrd && conf.kernels[boot_entry].initrd[0]) {
+		initrd_buf = mm_highmem_freestart();
+		res = readfile(conf.kernels[boot_entry].initrd, initrd_buf, mm_highmem_freesize());
+		if (res <= 0) {
+			printf("Could not read initrd (%d), panicking\n", res);
+			lv1_panic(0);
+		}
+		printf("Initrd size: %d\n", res);
+		mm_highmem_reserve(res);
+		kernel_set_initrd(initrd_buf, res);
+	}
+
+	kernel_build_cmdline(conf.kernels[boot_entry].parameters, conf.kernels[boot_entry].root);
+
+	f_mount(0, NULL);
+	disk_shutdown(0);
+	mm_shutdown();
+	kernel_launch();
+
+#endif
+	printf("End of main() reached! Rebooting...\n");
+	lv1_panic(1);
+	return 0;
 }
 
+#ifdef USE_NETWORK
 void shutdown_and_launch(void)
 {
 #ifdef NETRPC_ENABLE
@@ -215,3 +317,4 @@ void shutdown_and_launch(void)
 	mm_shutdown();
 	kernel_launch();
 }
+#endif

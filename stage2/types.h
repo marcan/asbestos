@@ -26,4 +26,24 @@ typedef signed long ssize_t;
 
 #define ALIGNED(x) __attribute__((aligned(x)))
 
+/* FATFS stuff */
+
+typedef u8 BYTE;
+typedef u8 UCHAR;
+
+typedef u16 WORD;
+typedef u16 USHORT;
+
+typedef u32 DWORD;
+typedef u32 UINT;
+typedef u32 ULONG;
+
+typedef s8 CHAR;
+typedef s16 SHORT;
+typedef u16 WCHAR;
+typedef s32 INT;
+typedef s32 LONG;
+
+typedef enum { FALSE = 0, TRUE } BOOL;
+
 #endif

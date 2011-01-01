@@ -15,4 +15,11 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 // Set up a server to control AsbestOS over the network
 //#define NETRPC_ENABLE
 
+// Automatically start kernel from HDD
+//#define AUTO_HDD
+
+#if defined(AUTO_TFTP) || defined(NETRPC_ENABLE)
+#define USE_NETWORK
+#endif
+
 #endif
