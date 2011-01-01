@@ -78,7 +78,7 @@ void debug_init(void)
 	s64 result;
 	u64 v2;
 
-	result = find_device_by_type(DEV_TYPE_ETH, 0, &bus_id, &dev_id, NULL);
+	result = find_device_by_type(BUS_TYPE_SB, DEV_TYPE_ETH, 0, &bus_id, &dev_id, NULL);
 	if (result)
 		lv1_panic(0);
 

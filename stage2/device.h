@@ -12,6 +12,11 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "types.h"
 
 enum {
+	BUS_TYPE_SB = 4,
+	BUS_TYPE_STOR = 5,
+};
+
+enum {
 	DEV_TYPE_STOR_DISK = 0,
 	DEV_TYPE_ETH = 3,
 	DEV_TYPE_USB = 4,
@@ -23,7 +28,7 @@ enum {
 int map_dma_mem(int bus_id, int dev_id, void *start, size_t len, u64 *bus_addr);
 int unmap_dma_mem(int bus_id, int dev_id, u64 bus_addr, size_t len);
 
-int find_device_by_type(int type, int index, int *bus_id, int *dev_id, int *irq);
+int find_device_by_type(int bustype, int type, int index, int *bus_id, int *dev_id, int *irq);
 int close_all_devs(void);
 
 #endif

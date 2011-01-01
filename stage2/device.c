@@ -53,7 +53,7 @@ int unmap_dma_mem(int bus_id, int dev_id, u64 bus_addr, size_t len)
 	return lv1_free_device_dma_region(bus_id, dev_id, real_bus_addr);
 }
 
-int find_device_by_type(int type, int index, int *pbus_id, int *pdev_id, int *pirq)
+int find_device_by_type(int bustype, int type, int index, int *pbus_id, int *pdev_id, int *pirq)
 {
 	u64 v2;
 	u64 bus_ndx;
@@ -76,6 +76,9 @@ int find_device_by_type(int type, int index, int *pbus_id, int *pdev_id, int *pi
 		if (result)
 			continue;
 
+		if (bus_type != bustype)
+			continue;
+		
 		//printf("Bus #%ld id %ld type %ld num_dev %ld\n", bus_ndx, bus_id, bus_type, num_dev);
 		u64 dev_ndx;
 		for (dev_ndx=0; dev_ndx<num_dev; dev_ndx++) {
@@ -124,7 +127,7 @@ int close_all_devs(void)
 	s64 result;
 	int gelic_bus, gelic_dev;
 
-	if (find_device_by_type(DEV_TYPE_ETH, 0, &gelic_bus, &gelic_dev, NULL) != 0) {
+	if (find_device_by_type(BUS_TYPE_SB, DEV_TYPE_ETH, 0, &gelic_bus, &gelic_dev, NULL) != 0) {
 		gelic_bus = gelic_dev = -1;
 	}
 

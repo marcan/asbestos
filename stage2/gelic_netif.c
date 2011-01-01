@@ -105,7 +105,7 @@ low_level_init(struct netif *netif)
 	u64 pktbuf_size = netif->mtu + 18;
 	pktbuf_size = (pktbuf_size+127)&(~127);
 
-	result = find_device_by_type(DEV_TYPE_ETH, 0, &gelicif->bus_id, &gelicif->dev_id, NULL);
+	result = find_device_by_type(BUS_TYPE_SB, DEV_TYPE_ETH, 0, &gelicif->bus_id, &gelicif->dev_id, NULL);
 	if (result)
 		fatal("gelicif: failed to find device");
 
