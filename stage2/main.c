@@ -214,6 +214,7 @@ int readfile(char *name, void *buf, u32 maxlen)
 
 int main(void)
 {
+	udelay(2000000);
 	debug_init();
 	printf("\n\nAsbestOS Stage 2 starting.\n");
 	printf("Waiting for thread 1...\n");

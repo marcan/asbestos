@@ -11,7 +11,7 @@ DTC=$(PS3DEV)/bin/dtc
 LZMA=lzma
 
 STUB_LDFLAGS := $(LDFLAGS) -Wl,--gc-sections -Wl,-T,uncompress/stub.ld
-LDFLAGS += -Wl,--gc-sections -Wl,-T,stage2.ld
+LDFLAGS += -Wl,--gc-sections
 STUB_CFLAGS := $(CFLAGS) -Os -Wall -ffunction-sections -I. -Iuncompress/
 CFLAGS += -Os -Wall -I. -ffunction-sections -fdata-sections \
 	-Ilwip/src/include -Ilwip/src/include/ipv4 -Ilwip/arch/include -Ilibfdt
@@ -32,10 +32,13 @@ LWIP_OBJS = \
 FDT_OBJS = $(addprefix libfdt/,\
 	fdt.o fdt_ro.o fdt_rw.o fdt_strerror.o fdt_sw.o fdt_wip.o)
 
-OBJS = start.o main.o debug.o hvcall.o string.o printf.o device.o malloc.o \
+CORE_OBJS = main.o debug.o hvcall.o string.o printf.o device.o malloc.o \
 	time.o tftp.o gelic_netif.o exceptions.o exc_vector.o mm.o netrpc.o \
 	cleanup.o devtree.o kernel.o kbootconf.o network.o diskio.o ff.o \
 	$(LWIP_OBJS) $(FDT_OBJS)
+
+OBJS = start.o $(CORE_OBJS)
+OBJS_NATIVE = start_native.o $(CORE_OBJS)
 
 STUB_OBJS = uncompress/stub_start.o uncompress/unlzma.o
 
@@ -61,9 +64,13 @@ uncompress/stub.elf: $(STUB_OBJS) uncompress/stub.ld
 	@echo "  LINK      $@"
 	@$(PREFIX)gcc $(STUB_LDFLAGS) -o $@ $(STUB_OBJS)
 
+stage2_native.elf: $(OBJS_NATIVE) stage2_native.ld
+	@echo "  LINK      $@"
+	@$(PREFIX)gcc $(LDFLAGS) -Wl,-T,stage2_native.ld -o $@ $(OBJS_NATIVE)
+
 stage2_raw.elf: $(OBJS) stage2.ld
 	@echo "  LINK      $@"
-	@$(PREFIX)gcc $(LDFLAGS) -o $@ $(OBJS)
+	@$(PREFIX)gcc $(LDFLAGS) -Wl,-T,stage2.ld -o $@ $(OBJS)
 
 %.S: %.dts
 	@echo "  DTC       $<"
