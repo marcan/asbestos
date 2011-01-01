@@ -189,10 +189,10 @@ void mm_init(void)
 	if (result)
 		fatal("Could not switch VAS\n");
 
+	mm_inited = 1;
+
 	asm("slbia");
 	mm_loadseg(0);
-
-	mm_inited = 1;
 
 	u64 msr;
 	asm("mfmsr %0" : "=r"(msr));
@@ -251,6 +251,19 @@ void mm_init(void)
 	highmem_ptr = mm_highmem_addr;
 
 	printf("Highmem = %ld bytes (%ldMB) at 0x%lx\n", mm_highmem_size, mm_highmem_size>>20, mm_highmem_addr);
+}
+
+void mm_shutdown_highmem(void)
+{
+	s32 result;
+
+	printf("Freeing highmem...\n");
+	result = lv1_release_memory(mm_highmem_addr);
+
+	if (result)
+		fatal("could not free highmem");
+
+	printf("Highmem is gone\n");
 }
 
 void mm_shutdown(void)
