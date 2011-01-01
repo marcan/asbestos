@@ -16,8 +16,12 @@ see file COPYING or http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 #include "debug.h"
 #include "lv1call.h"
 #include "mm.h"
+#include "network.h"
 
 #ifdef NETRPC_ENABLE
+
+extern volatile u64 _thread1_release;
+extern volatile u64 _thread1_vector;
 
 enum {
 	RPC_PING = 0,
@@ -29,6 +33,16 @@ enum {
 	RPC_DELMMIO,
 	RPC_CLRMMIO,
 	RPC_MEMSET,
+	RPC_VECTOR,
+	RPC_SYNC,
+};
+
+struct rpc_vec {
+	void *vec0;
+	void *vec1;
+	void *copy_dst;
+	void *copy_src;
+	u32 copy_size;
 };
 
 struct rpc_header {
@@ -56,6 +70,11 @@ struct rpc_header {
 			s64 retcode;
 			u8 retdata[];
 		} reply;
+		struct rpc_vec vector;
+		struct {
+			void *addr;
+			u32 size;
+		} sync;
 	};
 } __attribute__((packed));
 
@@ -163,6 +182,29 @@ void memset_align(void *dst, u64 val, u32 size)
 
 static u8 tmpbuf[XFERSIZE] __attribute__((aligned(64)));
 
+static u64 *vector[3] = {NULL,NULL,NULL};
+
+static void netrpc_vector(void *vec0, void *vec1, void *copy_dst, void *copy_src, u32 copy_size)
+{
+	netrpc_shutdown();
+	net_shutdown();
+	mm_shutdown_highmem();
+	mm_shutdown();
+	if (copy_size) {
+		printf("netrpc: Relocating vectors...\n");
+		memcpy(copy_dst, copy_src, copy_size);
+		sync_before_exec(copy_dst, copy_size);
+	}
+	printf("netrpc: Letting thread1 run loose...\n");
+	_thread1_vector = (u64)vec1;
+	_thread1_release = 1;
+	vector[0] = vec0;
+	printf("netrpc: Taking the plunge...\n");
+	//debug_shutdown();
+	((void (*)(void))vector)();
+	lv1_panic(0);
+}
+
 static void netrpc_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip_addr *addr, u16_t port)
 {
 	if (p->tot_len > BUFSIZE) {
@@ -179,6 +221,8 @@ static void netrpc_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct 
 	u32 numout;
 	u32 size;
 	u64 val;
+
+	struct rpc_vec vector;
 
 	switch (hdr->cmd) {
 		case RPC_PING:
@@ -249,6 +293,18 @@ static void netrpc_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct 
 			hdr->reply.retcode = mm_clrmmio();
 			sendbuf(REPLY_SIZE, addr, port);
 			break;
+		case RPC_VECTOR:
+			vector = hdr->vector;
+			printf("netrpc: vector called (%p,%p %p,%p,0x%x)...\n", vector.vec0, vector.vec1, vector.copy_dst, vector.copy_src, vector.copy_size);
+			hdr->reply.retcode = 0;
+			sendbuf(REPLY_SIZE, addr, port);
+			netrpc_vector(vector.vec0, vector.vec1, vector.copy_dst, vector.copy_src, vector.copy_size);
+			break;
+		case RPC_SYNC:
+			sync_before_exec(hdr->sync.addr, hdr->sync.size);
+			hdr->reply.retcode = 0;
+			sendbuf(REPLY_SIZE, addr, port);
+			break;
 		default:
 			printf("netrpc: Unknown RPC command 0x%x\n", hdr->cmd);
 			hdr->reply.retcode = -1;
@@ -273,13 +329,14 @@ void netrpc_init(void)
 }
 void netrpc_shutdown(void)
 {
+	printf("netrpc: shutting down\n");
 	if (pcb)
 		udp_remove(pcb);
 	pcb = NULL;
 	if (outbuf)
 		pbuf_free(outbuf);
 	outbuf = NULL;
-	printf("netrpc: shut down\n");
+	printf("netrpc: shutdown complete\n");
 }
 
 #endif

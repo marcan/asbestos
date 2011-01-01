@@ -112,6 +112,8 @@ class RPCClient(object):
 	RPC_DELMMIO = 5
 	RPC_CLRMMIO = 6
 	RPC_MEMSET = 7
+	RPC_VECTOR = 8
+	RPC_SYNC = 9
 	def __init__(self, host, port=1337):
 		self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.s.connect((host, port))
@@ -261,6 +263,17 @@ class RPCClient(object):
 	def clr_mmio(self):
 		ret = self.rpc(self.RPC_CLRMMIO)
 		self.chkret(ret)
+
+	def vector(self, vec0, vec1, copy_to=0, copy_from=0, copy_size=0):
+		args = struct.pack(">QQQQI", vec0, vec1, copy_to, copy_from, copy_size)
+		ret = self.rpc(self.RPC_VECTOR, args)
+		self.chkret(ret)
+
+	def sync_before_exec(self, addr, size):
+		args = struct.pack(">QI", addr, size)
+		ret = self.rpc(self.RPC_SYNC, args)
+		self.chkret(ret)
+
 
 L1GPU_CONTEXT_ATTRIBUTE_DISPLAY_SYNC = 0x101
 L1GPU_CONTEXT_ATTRIBUTE_DISPLAY_FLIP = 0x102
