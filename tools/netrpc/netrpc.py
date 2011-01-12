@@ -360,7 +360,7 @@ class LV1Client(RPCClient):
 
 	def read_repo(self, path):
 		lpar, k1, k2, k3, k4 = self.parse_repo_path(path)
-		return self.lv1_get_repository_node_value(lpar, k1, k2, k3, k4)
+		return self.lv1_read_repository_node(lpar, k1, k2, k3, k4)
 
 	def get_area_size(self, addr):
 		return self.lv1_query_logial_partition_address_region_info(addr)[1]

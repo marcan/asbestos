@@ -30,7 +30,7 @@ void lv2_cleanup(void)
 	printf("PPE id: %ld\n", ppe_id);
 
 	u64 vas_id;
-	result = lv1_get_virtual_address_space_id_of_ppe(ppe_id , &vas_id );
+	result = lv1_get_virtual_address_space_id_of_ppe(&vas_id);
 	printf("VAS id: %ld\n", vas_id);
 	result = lv1_select_virtual_address_space(0);
 	if (result == 0)

@@ -213,13 +213,13 @@ void mm_init(void)
 
 	u64 rm_size, rgntotal, v2;
 	
-	result = lv1_get_repository_node_value(lpar_id, FIELD_FIRST("bi",0),
+	result = lv1_read_repository_node(lpar_id, FIELD_FIRST("bi",0),
 					FIELD("pu",0), ppe_id, FIELD("rm_size",0),
 					&rm_size, &v2);
 	if (result)
 		fatal("could not get bootmem size");
 
-	result = lv1_get_repository_node_value(lpar_id, FIELD_FIRST("bi",0),
+	result = lv1_read_repository_node(lpar_id, FIELD_FIRST("bi",0),
 					FIELD("rgntotal",0), 0, 0, &rgntotal, &v2);
 	if (result)
 		fatal("could not get total region size");

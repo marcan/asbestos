@@ -2,7 +2,7 @@
 1	lv1_write_htab_entry							4	0	vas_id, pteg, pte_v, pte_r
 2	lv1_construct_virtual_address_space				3	2	htab_bits, num_sizes, page_sizes, vas_id, act_htab_size
 3	lv1_invalidate_htab_entries						5	0	
-4	lv1_get_virtual_address_space_id_of_ppe			1	1	ppe_id, vas_id
+4	lv1_get_virtual_address_space_id_of_ppe			0	1	vas_id
 6	lv1_query_logical_partition_address_region_info	1	5	addr, start_addr, size, perms, page_size, flags
 7	lv1_select_virtual_address_space				1	0	vas_id
 9	lv1_pause										1	0	ign_dec
@@ -36,7 +36,7 @@
 78	lv1_get_spe_irq_outlet							2	1	spe_id, class, outlet
 79	lv1_set_spe_privilege_state_area_1_register		3	0	spe_id, offset, value
 90	lv1_create_repository_node						6	0	k1, k2, k3, k4, v1, v2
-91	lv1_get_repository_node_value					5	2	lpar_id, k1, k2, k3, k4, v1, v2
+91	lv1_read_repository_node						5	2	lpar_id, k1, k2, k3, k4, v1, v2
 92	lv1_modify_repository_node_value				6	0	k1, k2, k3, k4, v1, v2
 93	lv1_remove_repository_node						4	0	k1, k2, k3, k4
 95	lv1_read_htab_entries							2	5	
@@ -52,7 +52,7 @@
 121	lv1_destruct_io_irq_outlet						1	0	outlet
 122	lv1_map_htab									1	1	unk, htab_addr
 123	lv1_unmap_htab									1	0	htab_addr
-127	lv1_get_version_info							0	1	firmware_version
+127	lv1_get_version_info							0	2	firmware_version, unk
 140	lv1_construct_lpm								6	3	
 141	lv1_destruct_lpm								1	0	
 142	lv1_start_lpm									1	0	
@@ -92,9 +92,9 @@
 185	lv1_net_add_multicast_address					4	0	bus_id, dev_id, addr, flag
 186	lv1_net_remove_multicast_address				4	0	bus_id, dev_id, unk, unk
 187	lv1_net_start_tx_dma							4	0	bus_id, dev_id, bus_addr, unk
-188	lv1_net_stop_tx_dma								3	0	bus_id, dev_id, unk
+188	lv1_net_stop_tx_dma								2	0	bus_id, dev_id
 189	lv1_net_start_rx_dma							4	0	bus_id, dev_id, bus_addr, unk
-190	lv1_net_stop_rx_dma								3	0	bus_id, dev_id, unk
+190	lv1_net_stop_rx_dma								2	0	bus_id, dev_id
 191	lv1_net_set_interrupt_status_indicator			4	0	bus_id, dev_id, irq_status_addr, unk
 193	lv1_net_set_interrupt_mask						4	0	bus_id, dev_id, mask, unk
 194	lv1_net_control									6	2	bus_id, dev_id, cmd, arg1, arg2, arg3, v1, v2
@@ -114,7 +114,7 @@
 221	lv1_gpu_context_iomap							5	0	ctx_handle, bus_addr, addr, size, iopte_flags
 225	lv1_gpu_context_attribute						6	0	ctx_handle, opcode, p1, p2, p3, p4
 227	lv1_gpu_context_intr							1	1	ctx_handle, pending_irqs
-228	lv1_gpu_attribute								5	0	attrib, unk, unk, unk, unk
+228	lv1_gpu_attribute								3	0	attrib, unk, unk
 232	lv1_get_rtc										0	2	rtc_val, tb_val
 240	lv1_set_ppe_periodic_tracer_frequency			1	0	
 241	lv1_start_ppe_periodic_tracer					5	0	

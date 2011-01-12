@@ -63,16 +63,16 @@ int find_device_by_type(int bustype, int type, int index, int *pbus_id, int *pde
 	for (bus_ndx=0; bus_ndx<10; bus_ndx++) {
 		u64 bus_id=0, bus_type=0, num_dev=0;
 
-		result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
-											   FIELD("type",0), 0, 0, &bus_type, &v2);
+		result = lv1_read_repository_node(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+										  FIELD("type",0), 0, 0, &bus_type, &v2);
 		if (result)
 			continue;
-		result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
-											   FIELD("id",0), 0, 0, &bus_id, &v2);
+		result = lv1_read_repository_node(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+										  FIELD("id",0), 0, 0, &bus_id, &v2);
 		if (result)
 			continue;
-		result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
-											   FIELD("num_dev",0), 0, 0, &num_dev, &v2);
+		result = lv1_read_repository_node(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+										  FIELD("num_dev",0), 0, 0, &num_dev, &v2);
 		if (result)
 			continue;
 
@@ -84,16 +84,16 @@ int find_device_by_type(int bustype, int type, int index, int *pbus_id, int *pde
 		for (dev_ndx=0; dev_ndx<num_dev; dev_ndx++) {
 			s64 dev_id=0, dev_type=0, dev_intr=0;
 
-			result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
-												   FIELD("dev",dev_ndx), FIELD("id",0), 0, (u64*)&dev_id, &v2);
+			result = lv1_read_repository_node(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+											  FIELD("dev",dev_ndx), FIELD("id",0), 0, (u64*)&dev_id, &v2);
 			if (result)
 				dev_id = -1;
-			result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
-												   FIELD("dev",dev_ndx), FIELD("type",0), 0, (u64*)&dev_type, &v2);
+			result = lv1_read_repository_node(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+											  FIELD("dev",dev_ndx), FIELD("type",0), 0, (u64*)&dev_type, &v2);
 			if (result)
 				dev_type = -1;
-			result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
-												   FIELD("dev",dev_ndx), FIELD("intr",0), 0, (u64*)&dev_intr, &v2);
+			result = lv1_read_repository_node(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+											  FIELD("dev",dev_ndx), FIELD("intr",0), 0, (u64*)&dev_intr, &v2);
 			if (result)
 				dev_intr = -1;
 
@@ -137,16 +137,16 @@ int close_all_devs(void)
 	for (bus_ndx=0; bus_ndx<10; bus_ndx++) {
 		u64 bus_id=0, bus_type=0, num_dev=0;
 
-		result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
-											   FIELD("type",0), 0, 0, &bus_type, &v2);
+		result = lv1_read_repository_node(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+										  FIELD("type",0), 0, 0, &bus_type, &v2);
 		if (result)
 			continue;
-		result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
-											   FIELD("id",0), 0, 0, &bus_id, &v2);
+		result = lv1_read_repository_node(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+										  FIELD("id",0), 0, 0, &bus_id, &v2);
 		if (result)
 			continue;
-		result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
-											   FIELD("num_dev",0), 0, 0, &num_dev, &v2);
+		result = lv1_read_repository_node(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+										  FIELD("num_dev",0), 0, 0, &num_dev, &v2);
 		if (result)
 			continue;
 
@@ -155,16 +155,16 @@ int close_all_devs(void)
 		for (dev_ndx=0; dev_ndx<num_dev; dev_ndx++) {
 			s64 dev_id=0, dev_type=0, dev_intr=0;
 
-			result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
-												   FIELD("dev",dev_ndx), FIELD("id",0), 0, (u64*)&dev_id, &v2);
+			result = lv1_read_repository_node(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+											  FIELD("dev",dev_ndx), FIELD("id",0), 0, (u64*)&dev_id, &v2);
 			if (result)
 				dev_id = -1;
-			result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
-												   FIELD("dev",dev_ndx), FIELD("type",0), 0, (u64*)&dev_type, &v2);
+			result = lv1_read_repository_node(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+											  FIELD("dev",dev_ndx), FIELD("type",0), 0, (u64*)&dev_type, &v2);
 			if (result)
 				dev_type = -1;
-			result = lv1_get_repository_node_value(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
-												   FIELD("dev",dev_ndx), FIELD("intr",0), 0, (u64*)&dev_intr, &v2);
+			result = lv1_read_repository_node(PS3_LPAR_ID_PME, FIELD_FIRST("bus",bus_ndx),
+											  FIELD("dev",dev_ndx), FIELD("intr",0), 0, (u64*)&dev_intr, &v2);
 			if (result)
 				dev_intr = -1;
 
